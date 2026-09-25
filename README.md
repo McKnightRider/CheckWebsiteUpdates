@@ -19,8 +19,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-When started with `python app.py`, the app starts the web server and the background monitor immediately.
-When hosted through WSGI, the monitor starts on the first request.
+Run this project with `python app.py`; this startup path starts both the web server and the background monitor.
 
 ## Configuration
 

@@ -5,6 +5,7 @@ import os
 import queue
 import re
 import threading
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, Optional
@@ -108,8 +109,14 @@ def _write_state(state_path: str, digest: str) -> None:
     parent_dir = os.path.dirname(state_path)
     if parent_dir:
         os.makedirs(parent_dir, exist_ok=True)
-    with open(state_path, "w", encoding="utf-8") as fh:
-        json.dump({"digest": digest, "updated_at": datetime.now(timezone.utc).isoformat()}, fh)
+    state = {"digest": digest, "updated_at": datetime.now(timezone.utc).isoformat()}
+    write_dir = parent_dir or "."
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=write_dir, delete=False) as fh:
+        json.dump(state, fh)
+        fh.flush()
+        os.fsync(fh.fileno())
+        temp_path = fh.name
+    os.replace(temp_path, state_path)
 
 
 def send_notification(webhook_url: str, result: MonitorResult) -> None:

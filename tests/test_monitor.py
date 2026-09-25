@@ -1,9 +1,11 @@
+import threading
+import time
 import unittest
 from unittest.mock import patch
 
 import requests
 
-from monitor import MonitorResult, calculate_digest, run_monitor_check, send_notification
+from monitor import MonitorResult, MonitorService, calculate_digest, run_monitor_check, send_notification
 
 
 class MonitorTests(unittest.TestCase):
@@ -77,6 +79,43 @@ class MonitorTests(unittest.TestCase):
 
         with self.assertRaises(requests.HTTPError):
             send_notification("https://hooks.example.com", result)
+
+    @patch("monitor.run_monitor_check")
+    def test_perform_check_serializes_concurrent_calls(self, run_check_mock):
+        service = MonitorService(
+            start_url="https://example.com",
+            state_path="/tmp/state.json",
+            webhook_url="",
+        )
+        state = {"active": 0, "max_active": 0}
+        state_lock = threading.Lock()
+
+        def fake_run(*args, **kwargs):
+            with state_lock:
+                state["active"] += 1
+                state["max_active"] = max(state["max_active"], state["active"])
+            time.sleep(0.05)
+            with state_lock:
+                state["active"] -= 1
+            return MonitorResult(
+                checked_at="2026-01-01T00:00:00+00:00",
+                changed=False,
+                current_digest="x",
+                previous_digest="x",
+                page_count=1,
+            )
+
+        run_check_mock.side_effect = fake_run
+
+        t1 = threading.Thread(target=service.perform_check)
+        t2 = threading.Thread(target=service.perform_check)
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+
+        self.assertEqual(run_check_mock.call_count, 2)
+        self.assertEqual(state["max_active"], 1)
 
 
 if __name__ == "__main__":
