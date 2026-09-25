@@ -58,9 +58,39 @@ jobs:
             exit 1
           fi
           mkdir -p website
-          for generated_file in index.html styles.css app.js history.json history.csv; do
-            cp "site/website/${generated_file}" "website/${generated_file}"
-          done
+          python - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+
+          manifest_name = "asset-manifest.json"
+          source_dir = Path("site/website")
+          target_dir = Path("website")
+          source_manifest = source_dir / manifest_name
+          if not source_manifest.is_file():
+              raise SystemExit(f"Expected generated manifest {source_manifest} was not created")
+
+          current_files = set(json.loads(source_manifest.read_text(encoding="utf-8")))
+          previous_manifest = target_dir / manifest_name
+          previous_files = set()
+          if previous_manifest.is_file():
+              previous_files = set(json.loads(previous_manifest.read_text(encoding="utf-8")))
+
+          for relative_path in sorted(previous_files - current_files):
+              candidate = target_dir / relative_path
+              if candidate.is_file() or candidate.is_symlink():
+                  candidate.unlink()
+                  parent = candidate.parent
+                  while parent != target_dir and parent.exists() and not any(parent.iterdir()):
+                      parent.rmdir()
+                      parent = parent.parent
+
+          for relative_path in sorted(current_files | {manifest_name}):
+              source_path = source_dir / relative_path
+              destination_path = target_dir / relative_path
+              destination_path.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(source_path, destination_path)
+          PY
 
       - name: Commit updated monitor history and website assets
         run: |

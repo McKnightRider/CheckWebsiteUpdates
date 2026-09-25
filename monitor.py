@@ -32,7 +32,15 @@ logger = logging.getLogger(__name__)
 DEFAULT_SITE_URL = "https://www.cdsdeterminationscommittees.org"
 DEFAULT_EMAIL_TO = ""
 WEBSITE_DIRNAME = "website"
-GENERATED_WEBSITE_FILES = ("index.html", "styles.css", "app.js", "history.json", "history.csv")
+GENERATED_WEBSITE_MANIFEST = "asset-manifest.json"
+GENERATED_WEBSITE_FILES = (
+    "index.html",
+    "styles.css",
+    "app.js",
+    "history.json",
+    "history.csv",
+    GENERATED_WEBSITE_MANIFEST,
+)
 WEBSITE_STYLESHEET = """\
 :root {
   color-scheme: light dark;
@@ -569,6 +577,12 @@ def _generate_site_redirect_html() -> str:
 
 
 
+def _build_generated_website_manifest() -> str:
+    managed_files = [name for name in GENERATED_WEBSITE_FILES if name != GENERATED_WEBSITE_MANIFEST]
+    return json.dumps(managed_files, indent=2) + "\n"
+
+
+
 def write_site_files(site_output_dir: Optional[str], start_url: str, history: list[dict[str, Any]]) -> None:
     if not site_output_dir:
         return
@@ -591,6 +605,7 @@ def write_site_files(site_output_dir: Optional[str], start_url: str, history: li
     (website_dir / "app.js").write_text(WEBSITE_SCRIPT, encoding="utf-8")
     (website_dir / "history.json").write_text(json.dumps(history, indent=2) + "\n", encoding="utf-8")
     (website_dir / "history.csv").write_text(_build_history_csv(history), encoding="utf-8")
+    (website_dir / GENERATED_WEBSITE_MANIFEST).write_text(_build_generated_website_manifest(), encoding="utf-8")
 
 
 
