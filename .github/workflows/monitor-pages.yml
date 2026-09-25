@@ -70,11 +70,26 @@ jobs:
           if not source_manifest.is_file():
               raise SystemExit(f"Expected generated manifest {source_manifest} was not created")
 
-          current_files = set(json.loads(source_manifest.read_text(encoding="utf-8")))
+          def validate_relative_path(raw_path: str) -> str:
+              relative_path = Path(raw_path)
+              if relative_path.is_absolute():
+                  raise SystemExit(f"Absolute manifest path is not allowed: {raw_path}")
+              if not relative_path.parts or any(part in {"..", ""} for part in relative_path.parts):
+                  raise SystemExit(f"Unsafe manifest path is not allowed: {raw_path}")
+              normalized_path = Path(*relative_path.parts)
+              return normalized_path.as_posix()
+
+          current_files = {
+              validate_relative_path(raw_path)
+              for raw_path in json.loads(source_manifest.read_text(encoding="utf-8"))
+          }
           previous_manifest = target_dir / manifest_name
           previous_files = set()
           if previous_manifest.is_file():
-              previous_files = set(json.loads(previous_manifest.read_text(encoding="utf-8")))
+              previous_files = {
+                  validate_relative_path(raw_path)
+                  for raw_path in json.loads(previous_manifest.read_text(encoding="utf-8"))
+              }
 
           for relative_path in sorted(previous_files - current_files):
               candidate = target_dir / relative_path
