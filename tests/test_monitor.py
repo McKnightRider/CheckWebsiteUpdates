@@ -286,7 +286,7 @@ class MonitorTests(unittest.TestCase):
         self.assertIn('id="refresh-button"', index_html)
         self.assertIn("Open Run workflow", index_html)
         self.assertIn("Run workflow", index_html)
-        self.assertIn("Reload this page to see the latest site output.", index_html)
+        self.assertIn("reload this page to see the latest site output.", index_html)
         self.assertNotIn('data-check-now-endpoint=', index_html)
         self.assertNotIn("Refresh PIN", index_html)
         self.assertNotIn('id="refresh-form"', index_html)
