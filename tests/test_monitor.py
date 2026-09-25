@@ -296,7 +296,7 @@ class MonitorTests(unittest.TestCase):
         self.assertIn("javascript:alert(1)", index_html)
         self.assertNotIn('href="javascript:alert(1)"', index_html)
 
-    def test_write_site_files_removes_stale_assets(self):
+    def test_write_site_files_preserves_unmanaged_assets(self):
         history = [
             {
                 "checked_at": "2026-01-01T00:00:00+00:00",
@@ -316,7 +316,7 @@ class MonitorTests(unittest.TestCase):
 
             write_site_files(str(output_dir), "https://example.com", history)
 
-            self.assertFalse(stale_file.exists())
+            self.assertTrue(stale_file.exists())
 
     def test_write_site_files_replaces_symlinked_website_dir(self):
         history = [

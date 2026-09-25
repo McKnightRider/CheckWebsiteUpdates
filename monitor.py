@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_SITE_URL = "https://www.cdsdeterminationscommittees.org"
 DEFAULT_EMAIL_TO = ""
 WEBSITE_DIRNAME = "website"
+GENERATED_WEBSITE_FILES = ("index.html", "styles.css", "app.js", "history.json", "history.csv")
 WEBSITE_STYLESHEET = """\
 :root {
   color-scheme: light dark;
@@ -577,9 +578,13 @@ def write_site_files(site_output_dir: Optional[str], start_url: str, history: li
     website_dir = output_dir / WEBSITE_DIRNAME
     if website_dir.is_symlink():
         website_dir.unlink()
-    elif website_dir.exists():
-        shutil.rmtree(website_dir)
     website_dir.mkdir(parents=True, exist_ok=True)
+    for generated_name in GENERATED_WEBSITE_FILES:
+        generated_path = website_dir / generated_name
+        if generated_path.is_symlink() or generated_path.is_file():
+            generated_path.unlink()
+        elif generated_path.is_dir():
+            shutil.rmtree(generated_path)
     (output_dir / "index.html").write_text(_generate_site_redirect_html(), encoding="utf-8")
     (website_dir / "index.html").write_text(generate_site_html(start_url=start_url, history=history), encoding="utf-8")
     (website_dir / "styles.css").write_text(WEBSITE_STYLESHEET, encoding="utf-8")
