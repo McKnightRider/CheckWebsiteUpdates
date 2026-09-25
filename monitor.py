@@ -761,6 +761,44 @@ def _render_history_heading(checked_at: str, *, is_first_check: bool = False) ->
 
 
 
+def _extract_github_repository(remote_url: str) -> Optional[str]:
+    normalized_remote = remote_url.strip()
+    if not normalized_remote:
+        return None
+    for prefix in ("https://github.com/", "git@github.com:"):
+        if normalized_remote.startswith(prefix):
+            repository = normalized_remote[len(prefix):]
+            if repository.endswith(".git"):
+                repository = repository[:-4]
+            owner, separator, repo = repository.partition("/")
+            if separator and owner and repo and "/" not in repo:
+                return f"{owner}/{repo}"
+    return None
+
+
+
+def get_github_repository() -> Optional[str]:
+    configured_repository = os.getenv("GITHUB_REPOSITORY", "").strip()
+    if configured_repository:
+        return configured_repository
+
+    git_config_path = Path(".git/config")
+    if not git_config_path.is_file():
+        return None
+
+    current_section = ""
+    for raw_line in git_config_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if line.startswith("[") and line.endswith("]"):
+            current_section = line
+            continue
+        if current_section != '[remote "origin"]' or not line.startswith("url ="):
+            continue
+        return _extract_github_repository(line.partition("=")[2])
+    return None
+
+
+
 def get_manual_refresh_workflow_url(repository: Optional[str]) -> Optional[str]:
     if not repository:
         return None
@@ -805,7 +843,7 @@ def generate_site_html(
     if manual_refresh_url:
         manual_refresh_markup = f"""
         <p class=\"refresh-help\">To run an immediate check, open the GitHub Actions workflow and click <strong>Run workflow</strong>. You must be signed in with permission to run workflows for this repository.</p>
-        <p><a id=\"refresh-button\" class=\"refresh-link\" href=\"{escape(manual_refresh_url)}\" target=\"_blank\" rel=\"noreferrer\">Open Run workflow</a></p>
+        <p><a id=\"refresh-button\" class=\"refresh-link\" href=\"{escape(manual_refresh_url)}\" target=\"_blank\" rel=\"noopener noreferrer\">Open Run workflow</a></p>
         <p id=\"refresh-status\" class=\"refresh-status\" aria-live=\"polite\">After the workflow finishes, reload this page to see the latest site output.</p>
         """
     else:
@@ -1070,7 +1108,7 @@ def run_monitor_check(
         start_url=start_url,
         monitored_urls=configured_monitored_urls,
         history=history,
-        manual_refresh_url=get_manual_refresh_workflow_url(os.getenv("GITHUB_REPOSITORY")),
+        manual_refresh_url=get_manual_refresh_workflow_url(get_github_repository()),
     )
 
     if changed:

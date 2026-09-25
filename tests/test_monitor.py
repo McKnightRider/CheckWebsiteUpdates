@@ -1,9 +1,10 @@
+import csv
 import json
+import os
 import tempfile
 import threading
 import time
 import unittest
-import csv
 from pathlib import Path
 from unittest.mock import patch
 
@@ -18,6 +19,8 @@ from monitor import (
     PageChange,
     build_page_digests,
     calculate_digest,
+    get_github_repository,
+    get_manual_refresh_workflow_url,
     run_monitor_check,
     send_email_notification,
     send_notification,
@@ -287,6 +290,7 @@ class MonitorTests(unittest.TestCase):
         self.assertIn("Open Run workflow", index_html)
         self.assertIn("Run workflow", index_html)
         self.assertIn("reload this page to see the latest site output.", index_html)
+        self.assertIn('rel="noopener noreferrer"', index_html)
         self.assertNotIn('data-check-now-endpoint=', index_html)
         self.assertNotIn("Refresh PIN", index_html)
         self.assertNotIn('id="refresh-form"', index_html)
@@ -351,6 +355,28 @@ class MonitorTests(unittest.TestCase):
             index_html = (output_dir / "website" / "index.html").read_text(encoding="utf-8")
 
         self.assertIn("Open the repository Actions tab", index_html)
+
+    def test_get_github_repository_reads_origin_remote_when_env_missing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_dir = Path(tmpdir)
+            git_dir = repo_dir / ".git"
+            git_dir.mkdir()
+            (git_dir / "config").write_text(
+                '[core]\n\trepositoryformatversion = 0\n[remote "origin"]\n\turl = git@github.com:octo/repo.git\n',
+                encoding="utf-8",
+            )
+            previous_cwd = Path.cwd()
+            try:
+                os.chdir(repo_dir)
+                with patch.dict(os.environ, {"GITHUB_REPOSITORY": ""}):
+                    repository = get_github_repository()
+            finally:
+                os.chdir(previous_cwd)
+
+        self.assertEqual(repository, "octo/repo")
+
+    def test_get_manual_refresh_workflow_url_returns_none_for_invalid_repository(self):
+        self.assertIsNone(get_manual_refresh_workflow_url("invalid"))
 
     def test_write_site_files_does_not_link_unsafe_urls(self):
         history = [
