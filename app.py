@@ -5,11 +5,18 @@ from threading import Lock
 
 from flask import Flask, jsonify, request
 
-from monitor import DEFAULT_EMAIL_TO, DEFAULT_SITE_URL, EmailSettings, MonitorService
+from monitor import (
+    DEFAULT_EMAIL_TO,
+    DEFAULT_SITE_URL,
+    EmailSettings,
+    MonitorService,
+    get_monitored_urls_from_env,
+)
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
 START_URL = os.getenv("START_URL", DEFAULT_SITE_URL)
+MONITORED_URLS = get_monitored_urls_from_env(START_URL)
 STATE_PATH = os.getenv("STATE_PATH", "site_data/monitor_state.json")
 HISTORY_PATH = os.getenv("HISTORY_PATH", "site_data/history.json")
 SITE_OUTPUT_DIR = os.getenv("SITE_OUTPUT_DIR", "site")
@@ -28,6 +35,7 @@ service = MonitorService(
     state_path=STATE_PATH,
     webhook_url=WEBHOOK_URL,
     interval_seconds=12 * 60 * 60,
+    monitored_urls=MONITORED_URLS,
     history_path=HISTORY_PATH,
     site_output_dir=SITE_OUTPUT_DIR,
     email_settings=EmailSettings.from_env(),

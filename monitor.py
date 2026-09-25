@@ -32,6 +32,13 @@ except ImportError:  # pragma: no cover - non-Unix
 logger = logging.getLogger(__name__)
 DEFAULT_SITE_URL = "https://www.cdsdeterminationscommittees.org"
 DEFAULT_EMAIL_TO = ""
+DEFAULT_MONITORED_URLS = (
+    DEFAULT_SITE_URL,
+    f"{DEFAULT_SITE_URL}/credit-default-swaps-management",
+    f"{DEFAULT_SITE_URL}/about-dc-committees",
+    f"{DEFAULT_SITE_URL}/dc-rules",
+    f"{DEFAULT_SITE_URL}/governance-committee",
+)
 WEBSITE_DIRNAME = "website"
 GENERATED_WEBSITE_MANIFEST = "asset-manifest.json"
 GENERATED_WEBSITE_FILES = (
@@ -276,6 +283,40 @@ class EmailSettings:
             os.getenv("EMAIL_TO", DEFAULT_EMAIL_TO),
             use_tls,
         )
+
+
+
+def get_monitored_urls(start_url: str, raw_urls: Optional[list[str]] = None) -> list[str]:
+    normalized_start_url = _normalize_url(start_url)
+    parsed_start_url = urlparse(normalized_start_url)
+    allowed_host = (parsed_start_url.hostname or parsed_start_url.netloc).lower()
+    canonical_scheme = parsed_start_url.scheme.lower()
+    canonical_port = parsed_start_url.port
+    default_port_for_scheme = 443 if canonical_scheme == "https" else 80
+    if canonical_port == default_port_for_scheme:
+        canonical_port = None
+
+    selected_urls = raw_urls or list(DEFAULT_MONITORED_URLS)
+    normalized_urls: list[str] = []
+    seen_urls: set[str] = set()
+    for raw_url in selected_urls:
+        normalized_url = _normalize_url(
+            raw_url,
+            canonical_host=allowed_host,
+            canonical_scheme=canonical_scheme,
+            canonical_port=canonical_port,
+        )
+        if normalized_url and normalized_url not in seen_urls:
+            normalized_urls.append(normalized_url)
+            seen_urls.add(normalized_url)
+    return normalized_urls or [normalized_start_url]
+
+
+
+def get_monitored_urls_from_env(start_url: str, env_var_name: str = "MONITORED_URLS") -> list[str]:
+    raw_value = os.getenv(env_var_name, "")
+    configured_urls = [item.strip() for item in raw_value.split(",") if item.strip()]
+    return get_monitored_urls(start_url=start_url, raw_urls=configured_urls or None)
 
 
 
@@ -780,9 +821,12 @@ def _build_history_csv(history: list[dict[str, Any]]) -> str:
 
 
 
-def generate_site_html(start_url: str, history: list[dict[str, Any]]) -> str:
+def generate_site_html(start_url: str, monitored_urls: list[str], history: list[dict[str, Any]]) -> str:
     latest = history[-1] if history else None
     title = "DC Website Update Monitor"
+    monitored_pages_markup = "".join(
+        f'<li><a href="{escape(url)}">{escape(url)}</a></li>' for url in monitored_urls
+    )
 
     if latest:
         latest_summary = f"""
@@ -826,7 +870,8 @@ def generate_site_html(start_url: str, history: list[dict[str, Any]]) -> str:
     <main class=\"layout\">
       <section class=\"card\">
         <h1>{title}</h1>
-        <p>This site tracks checks against <a href=\"{escape(start_url)}\">{escape(start_url)}</a>.</p>
+        <p>This site tracks checks against selected CDS Determinations Committee pages.</p>
+        <ul>{monitored_pages_markup}</ul>
         <ul class=\"resource-list\">
           <li><a href=\"history.csv\">Download history spreadsheet</a></li>
           <li><a href=\"history.json\">Download history JSON</a></li>
@@ -881,7 +926,12 @@ def _build_generated_website_manifest() -> str:
 
 
 
-def write_site_files(site_output_dir: Optional[str], start_url: str, history: list[dict[str, Any]]) -> None:
+def write_site_files(
+    site_output_dir: Optional[str],
+    start_url: str,
+    monitored_urls: list[str],
+    history: list[dict[str, Any]],
+) -> None:
     if not site_output_dir:
         return
 
@@ -898,7 +948,10 @@ def write_site_files(site_output_dir: Optional[str], start_url: str, history: li
         elif generated_path.is_dir():
             shutil.rmtree(generated_path)
     (output_dir / "index.html").write_text(_generate_site_redirect_html(), encoding="utf-8")
-    (website_dir / "index.html").write_text(generate_site_html(start_url=start_url, history=history), encoding="utf-8")
+    (website_dir / "index.html").write_text(
+        generate_site_html(start_url=start_url, monitored_urls=monitored_urls, history=history),
+        encoding="utf-8",
+    )
     (website_dir / "styles.css").write_text(WEBSITE_STYLESHEET, encoding="utf-8")
     (website_dir / "app.js").write_text(WEBSITE_SCRIPT, encoding="utf-8")
     (website_dir / "history.json").write_text(json.dumps(history, indent=2) + "\n", encoding="utf-8")
@@ -972,6 +1025,7 @@ def run_monitor_check(
     state_path: str,
     webhook_url: str,
     max_pages: int = 200,
+    monitored_urls: Optional[list[str]] = None,
     history_path: Optional[str] = None,
     site_output_dir: Optional[str] = None,
     email_settings: Optional[EmailSettings] = None,
@@ -984,30 +1038,12 @@ def run_monitor_check(
         previous_page_digests = previous_state.get("page_digests") or {}
         diagnostics: list[str] = []
 
-        discovered = crawl_site(start_url=start_url, max_pages=max_pages)
-        diagnostics.append(
-            f"Discovery crawl found {len(discovered.discovered_urls)} URLs with {len(discovered.fetch_failures)} fetch failures."
-        )
-        if discovered.fetch_failures:
-            diagnostics.append(
-                f"Discovery fetch failures: {', '.join(sorted(discovered.fetch_failures)[:10])}"
-            )
-
         normalized_start_url = _normalize_url(start_url)
-        inventory_urls = set(previous_state.get("canonical_urls") or [normalized_start_url])
-        pending_added = _as_str_int_map(previous_state.get("pending_added"))
-        pending_removed = _as_str_int_map(previous_state.get("pending_removed"))
-
-        inventory_urls, pending_added, pending_removed, inventory_diagnostics = reconcile_inventory(
-            inventory_urls=inventory_urls,
-            discovered_urls=discovered.discovered_urls | {normalized_start_url},
-            pending_added=pending_added,
-            pending_removed=pending_removed,
-            confirmation_runs=max(1, structure_confirmation_runs),
-            allow_removals=not discovered.fetch_failures,
-        )
-        diagnostics.extend(inventory_diagnostics)
-        diagnostics.append(f"Active canonical inventory size: {len(inventory_urls)}")
+        configured_monitored_urls = get_monitored_urls(start_url=start_url, raw_urls=monitored_urls)
+        inventory_urls = set(configured_monitored_urls or [normalized_start_url])
+        pending_added: dict[str, int] = {}
+        pending_removed: dict[str, int] = {}
+        diagnostics.append(f"Monitoring configured pages only ({len(inventory_urls)} URLs).")
 
         inventory_contents, inventory_failures = fetch_inventory_pages(inventory_urls=inventory_urls)
         if inventory_failures:
@@ -1063,7 +1099,12 @@ def run_monitor_check(
         )
         history = _append_history(history_path, result, limit=history_limit)
 
-    write_site_files(site_output_dir, start_url=start_url, history=history)
+    write_site_files(
+        site_output_dir,
+        start_url=start_url,
+        monitored_urls=configured_monitored_urls,
+        history=history,
+    )
 
     if changed:
         send_notification(webhook_url=webhook_url, result=result)
@@ -1080,6 +1121,7 @@ class MonitorService:
         state_path: str,
         webhook_url: str,
         interval_seconds: int = 12 * 60 * 60,
+        monitored_urls: Optional[list[str]] = None,
         history_path: Optional[str] = None,
         site_output_dir: Optional[str] = None,
         email_settings: Optional[EmailSettings] = None,
@@ -1088,6 +1130,7 @@ class MonitorService:
         self.state_path = state_path
         self.webhook_url = webhook_url
         self.interval_seconds = interval_seconds
+        self.monitored_urls = get_monitored_urls(start_url=start_url, raw_urls=monitored_urls)
         self.history_path = history_path
         self.site_output_dir = site_output_dir
         self.email_settings = email_settings
@@ -1104,6 +1147,7 @@ class MonitorService:
                 state_path=self.state_path,
                 webhook_url=self.webhook_url,
                 history_path=self.history_path,
+                monitored_urls=self.monitored_urls,
                 site_output_dir=self.site_output_dir,
                 email_settings=self.email_settings,
             )
@@ -1152,11 +1196,13 @@ class MonitorService:
 
 if __name__ == "__main__":
     logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+    start_url = os.getenv("START_URL", DEFAULT_SITE_URL)
     result = run_monitor_check(
-        start_url=os.getenv("START_URL", DEFAULT_SITE_URL),
+        start_url=start_url,
         state_path=os.getenv("STATE_PATH", "site_data/monitor_state.json"),
         webhook_url=os.getenv("NOTIFICATION_WEBHOOK_URL", ""),
         max_pages=int(os.getenv("MAX_PAGES", "200")),
+        monitored_urls=get_monitored_urls_from_env(start_url=start_url),
         history_path=os.getenv("HISTORY_PATH", "site_data/history.json"),
         site_output_dir=os.getenv("SITE_OUTPUT_DIR", "site"),
         email_settings=EmailSettings.from_env(),
