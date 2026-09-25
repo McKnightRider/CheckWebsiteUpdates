@@ -88,7 +88,12 @@ class EmailSettings:
 
 
 
-def _normalize_url(raw_url: str, canonical_host: Optional[str] = None, canonical_scheme: Optional[str] = None) -> str:
+def _normalize_url(
+    raw_url: str,
+    canonical_host: Optional[str] = None,
+    canonical_scheme: Optional[str] = None,
+    canonical_port: Optional[int] = None,
+) -> str:
     normalized, _ = urldefrag(raw_url.strip())
     parsed = urlparse(normalized)
     if parsed.scheme in {"http", "https"} and parsed.netloc:
@@ -97,22 +102,41 @@ def _normalize_url(raw_url: str, canonical_host: Optional[str] = None, canonical
             return normalized.rstrip("/") or normalized
         scheme = parsed.scheme.lower()
         canonical_host_lower = canonical_host.lower() if canonical_host else None
+        try:
+            port = parsed.port
+        except ValueError:
+            return normalized.rstrip("/") or normalized
         if canonical_host_lower and host == canonical_host_lower:
             host = canonical_host_lower
             if canonical_scheme:
                 scheme = canonical_scheme.lower()
-        port = parsed.port
+            if canonical_port is not None:
+                port = canonical_port
         default_port = 443 if scheme == "https" else 80
         if port == default_port:
             port = None
-        netloc = f"{host}:{port}" if port is not None else host
+        userinfo = ""
+        if parsed.username is not None:
+            userinfo = parsed.username
+            if parsed.password is not None:
+                userinfo += f":{parsed.password}"
+            userinfo += "@"
+        netloc = f"{userinfo}{host}"
+        if port is not None:
+            netloc += f":{port}"
         parsed = parsed._replace(scheme=scheme, netloc=netloc)
         normalized = parsed.geturl()
     return normalized.rstrip("/") or normalized
 
 
 
-def _extract_links(html: str, page_url: str, allowed_host: str, canonical_scheme: str) -> set[str]:
+def _extract_links(
+    html: str,
+    page_url: str,
+    allowed_host: str,
+    canonical_scheme: str,
+    canonical_port: Optional[int] = None,
+) -> set[str]:
     soup = BeautifulSoup(html, "html.parser")
     links = set()
     for anchor in soup.find_all("a", href=True):
@@ -120,6 +144,7 @@ def _extract_links(html: str, page_url: str, allowed_host: str, canonical_scheme
             urljoin(page_url, anchor["href"]),
             canonical_host=allowed_host,
             canonical_scheme=canonical_scheme,
+            canonical_port=canonical_port,
         )
         parsed = urlparse(candidate)
         if parsed.scheme not in {"http", "https"}:
@@ -143,7 +168,13 @@ def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[
     parsed_start_url = urlparse(start_url)
     allowed_host = (parsed_start_url.hostname or parsed_start_url.netloc).lower()
     canonical_scheme = parsed_start_url.scheme.lower()
-    start_url = _normalize_url(start_url, canonical_host=allowed_host, canonical_scheme=canonical_scheme)
+    canonical_port = parsed_start_url.port
+    start_url = _normalize_url(
+        start_url,
+        canonical_host=allowed_host,
+        canonical_scheme=canonical_scheme,
+        canonical_port=canonical_port,
+    )
 
     session = requests.Session()
     urls = queue.Queue()
@@ -165,7 +196,7 @@ def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[
 
             content_by_url[current] = _normalize_text(response.text)
 
-            for link in _extract_links(response.text, current, allowed_host, canonical_scheme):
+            for link in _extract_links(response.text, current, allowed_host, canonical_scheme, canonical_port):
                 if link not in visited:
                     urls.put(link)
         except requests.RequestException as exc:
