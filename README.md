@@ -8,7 +8,8 @@ A small website monitor for [cdsdeterminationscommittees.org](https://www.cdsdet
 - Builds a content digest of fetched HTML pages
 - Runs checks every 12 hours
 - Tracks the date and time of each check plus the pages changed in that check
-- Publishes a GitHub Pages status site with the latest check and recent history
+- Publishes a GitHub Pages status site under `website/` with the latest check and recent history
+- Saves the Pages history data as a spreadsheet-friendly CSV alongside the site assets
 - Sends change notifications by webhook and email when configured
 - Exposes a small status website
 
@@ -35,7 +36,7 @@ python monitor.py
 - `NOTIFICATION_WEBHOOK_URL` (optional): webhook URL to receive change notifications.
 - `STATE_PATH` (optional, default `site_data/monitor_state.json`): file where the last site digest and per-page digests are stored.
 - `HISTORY_PATH` (optional, default `site_data/history.json`): file where recent check history is stored.
-- `SITE_OUTPUT_DIR` (optional, default `site`): directory for the generated GitHub Pages site.
+- `SITE_OUTPUT_DIR` (optional, default `site`): base directory for the generated GitHub Pages site. The published assets are written under `website/`.
 - `CHECK_NOW_TOKEN` (optional but recommended): required token for `POST /check-now`, sent as `X-Check-Token` header.
 - `EMAIL_TO` (optional): recipient for change emails.
 - `EMAIL_FROM` (required for email sending): sender address used for change emails.
@@ -55,7 +56,8 @@ python monitor.py
 The repository includes a GitHub Actions workflow that:
 
 - runs on a 12-hour schedule, on manual dispatch, and on pushes to `main`
-- generates the static GitHub Pages site in `site/`
+- generates the static GitHub Pages site in `site/website/`
+- saves the rendered history data in `site/website/history.csv`
 - stores persistent monitor state and check history in `site_data/`
 - deploys the generated site to GitHub Pages
 - commits updated `site_data/` files back to the repository so the next run can compare against the previous check

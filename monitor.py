@@ -1,4 +1,6 @@
+import csv
 import hashlib
+import io
 import json
 import logging
 import os
@@ -28,6 +30,79 @@ except ImportError:  # pragma: no cover - non-Unix
 logger = logging.getLogger(__name__)
 DEFAULT_SITE_URL = "https://www.cdsdeterminationscommittees.org"
 DEFAULT_EMAIL_TO = ""
+WEBSITE_DIRNAME = "website"
+WEBSITE_STYLESHEET = """\
+:root {
+  color-scheme: light dark;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 2rem;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+a {
+  color: #93c5fd;
+}
+
+.layout {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.card {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+}
+
+.history-item h3 {
+  margin-top: 0;
+}
+
+ul {
+  padding-left: 1.25rem;
+}
+
+.resource-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-left: 0;
+  list-style: none;
+}
+
+.resource-list a {
+  display: inline-block;
+  padding: 0.65rem 0.9rem;
+  border-radius: 999px;
+  text-decoration: none;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(147, 197, 253, 0.35);
+}
+"""
+WEBSITE_SCRIPT = """\
+document.addEventListener("DOMContentLoaded", () => {
+  const historyItems = document.querySelectorAll(".history-item");
+  const historyCount = document.getElementById("history-count");
+  if (historyCount) {
+    historyCount.textContent = String(historyItems.length);
+  }
+
+  for (const element of document.querySelectorAll("[data-checked-at]")) {
+    const checkedAt = element.getAttribute("data-checked-at");
+    if (checkedAt) {
+      element.title = checkedAt;
+    }
+  }
+});
+"""
 
 
 @dataclass(frozen=True)
@@ -378,6 +453,37 @@ def _render_change_items(changes: list[dict[str, str]]) -> str:
 
 
 
+def _build_history_csv(history: list[dict[str, Any]]) -> str:
+    rows = io.StringIO()
+    writer = csv.DictWriter(
+        rows,
+        fieldnames=[
+            "checked_at",
+            "checked_at_display",
+            "changed",
+            "page_count",
+            "previous_digest",
+            "current_digest",
+            "page_changes",
+        ],
+    )
+    writer.writeheader()
+    for entry in history:
+        writer.writerow(
+            {
+                "checked_at": entry.get("checked_at", ""),
+                "checked_at_display": _format_timestamp(str(entry.get("checked_at", ""))),
+                "changed": "true" if entry.get("changed") else "false",
+                "page_count": entry.get("page_count", ""),
+                "previous_digest": entry.get("previous_digest", "") or "",
+                "current_digest": entry.get("current_digest", "") or "",
+                "page_changes": json.dumps(entry.get("page_changes", []), separators=(",", ":")),
+            }
+        )
+    return rows.getvalue()
+
+
+
 def generate_site_html(start_url: str, history: list[dict[str, Any]]) -> str:
     latest = history[-1] if history else None
     title = "CDS Determinations Committee Monitor"
@@ -386,7 +492,7 @@ def generate_site_html(start_url: str, history: list[dict[str, Any]]) -> str:
         latest_summary = f"""
         <section class=\"card\">
           <h2>Latest check</h2>
-          <p><strong>Checked at:</strong> {escape(_format_timestamp(latest['checked_at']))}</p>
+          <p><strong>Checked at:</strong> <span data-checked-at="{escape(latest['checked_at'])}">{escape(_format_timestamp(latest['checked_at']))}</span></p>
           <p><strong>Status:</strong> {'Changes detected' if latest['changed'] else 'No changes detected'}</p>
           <p><strong>Pages checked:</strong> {latest['page_count']}</p>
           <ul>{_render_change_items(latest.get('page_changes', []))}</ul>
@@ -403,7 +509,7 @@ def generate_site_html(start_url: str, history: list[dict[str, Any]]) -> str:
     history_markup = "".join(
         f"""
         <article class=\"card history-item\">
-          <h3>{escape(_format_timestamp(entry['checked_at']))}</h3>
+          <h3 data-checked-at="{escape(entry['checked_at'])}">{escape(_format_timestamp(entry['checked_at']))}</h3>
           <p><strong>Status:</strong> {'Changes detected' if entry['changed'] else 'No changes detected'}</p>
           <p><strong>Pages checked:</strong> {entry['page_count']}</p>
           <ul>{_render_change_items(entry.get('page_changes', []))}</ul>
@@ -418,52 +524,42 @@ def generate_site_html(start_url: str, history: list[dict[str, Any]]) -> str:
     <meta charset=\"utf-8\">
     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
     <title>{title}</title>
-    <style>
-      :root {{
-        color-scheme: light dark;
-        font-family: Arial, sans-serif;
-      }}
-      body {{
-        margin: 0;
-        padding: 2rem;
-        background: #0f172a;
-        color: #e2e8f0;
-      }}
-      a {{
-        color: #93c5fd;
-      }}
-      .layout {{
-        max-width: 960px;
-        margin: 0 auto;
-      }}
-      .card {{
-        background: rgba(15, 23, 42, 0.75);
-        border: 1px solid rgba(148, 163, 184, 0.3);
-        border-radius: 12px;
-        padding: 1.25rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
-      }}
-      .history-item h3 {{
-        margin-top: 0;
-      }}
-      ul {{
-        padding-left: 1.25rem;
-      }}
-    </style>
+    <link rel=\"stylesheet\" href=\"styles.css\">
   </head>
   <body>
     <main class=\"layout\">
       <section class=\"card\">
         <h1>{title}</h1>
         <p>This site tracks checks against <a href=\"{escape(start_url)}\">{escape(start_url)}</a>.</p>
+        <ul class=\"resource-list\">
+          <li><a href=\"history.csv\">Download history spreadsheet</a></li>
+          <li><a href=\"history.json\">Download history JSON</a></li>
+        </ul>
       </section>
       {latest_summary}
       <section class=\"card\">
-        <h2>Recent checks</h2>
+        <h2>Recent checks (<span id=\"history-count\">0</span>)</h2>
         {history_markup}
       </section>
     </main>
+    <script src=\"app.js\"></script>
+  </body>
+</html>
+"""
+
+
+
+def _generate_site_redirect_html() -> str:
+    return """<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="refresh" content="0; url=website/">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Redirecting…</title>
+  </head>
+  <body>
+    <p>Redirecting to the website… <a href="website/">Continue</a>.</p>
   </body>
 </html>
 """
@@ -476,8 +572,14 @@ def write_site_files(site_output_dir: Optional[str], start_url: str, history: li
 
     output_dir = Path(site_output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "index.html").write_text(generate_site_html(start_url=start_url, history=history), encoding="utf-8")
-    (output_dir / "history.json").write_text(json.dumps(history, indent=2) + "\n", encoding="utf-8")
+    website_dir = output_dir / WEBSITE_DIRNAME
+    website_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "index.html").write_text(_generate_site_redirect_html(), encoding="utf-8")
+    (website_dir / "index.html").write_text(generate_site_html(start_url=start_url, history=history), encoding="utf-8")
+    (website_dir / "styles.css").write_text(WEBSITE_STYLESHEET, encoding="utf-8")
+    (website_dir / "app.js").write_text(WEBSITE_SCRIPT, encoding="utf-8")
+    (website_dir / "history.json").write_text(json.dumps(history, indent=2) + "\n", encoding="utf-8")
+    (website_dir / "history.csv").write_text(_build_history_csv(history), encoding="utf-8")
 
 
 
