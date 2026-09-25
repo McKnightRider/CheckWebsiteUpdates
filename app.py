@@ -1,18 +1,21 @@
 import logging
 import os
-from threading import Lock
 from hmac import compare_digest
+from threading import Lock
 
 from flask import Flask, abort, jsonify, request
 
-from monitor import MonitorService
+from monitor import DEFAULT_EMAIL_TO, DEFAULT_SITE_URL, EmailSettings, MonitorService
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
-START_URL = "https://www.cdsdeterminationscommittees.org"
-STATE_PATH = os.getenv("STATE_PATH", "data/state.json")
+START_URL = os.getenv("START_URL", DEFAULT_SITE_URL)
+STATE_PATH = os.getenv("STATE_PATH", "site_data/monitor_state.json")
+HISTORY_PATH = os.getenv("HISTORY_PATH", "site_data/history.json")
+SITE_OUTPUT_DIR = os.getenv("SITE_OUTPUT_DIR", "site")
 WEBHOOK_URL = os.getenv("NOTIFICATION_WEBHOOK_URL", "")
 CHECK_NOW_TOKEN = os.getenv("CHECK_NOW_TOKEN", "")
+EMAIL_TO = os.getenv("EMAIL_TO", DEFAULT_EMAIL_TO)
 
 app = Flask(__name__)
 service = MonitorService(
@@ -20,9 +23,13 @@ service = MonitorService(
     state_path=STATE_PATH,
     webhook_url=WEBHOOK_URL,
     interval_seconds=12 * 60 * 60,
+    history_path=HISTORY_PATH,
+    site_output_dir=SITE_OUTPUT_DIR,
+    email_settings=EmailSettings.from_env(),
 )
 _service_start_lock = Lock()
 _service_started = False
+
 
 
 def ensure_service_started() -> None:
@@ -40,18 +47,21 @@ def ensure_service_started() -> None:
 def index():
     result = service.last_result
     if result is None:
-        return jsonify({"status": "running", "last_check": None})
+        return jsonify(
+            {
+                "status": "running",
+                "last_check": None,
+                "pages_site_output": SITE_OUTPUT_DIR,
+                "email_to": EMAIL_TO,
+            }
+        )
 
     return jsonify(
         {
             "status": "running",
-            "last_check": {
-                "checked_at": result.checked_at,
-                "changed": result.changed,
-                "current_digest": result.current_digest,
-                "previous_digest": result.previous_digest,
-                "page_count": result.page_count,
-            },
+            "last_check": result.to_dict(),
+            "pages_site_output": SITE_OUTPUT_DIR,
+            "email_to": EMAIL_TO,
         }
     )
 
@@ -63,7 +73,7 @@ def check_now():
         abort(403)
 
     result = service.perform_check()
-    return jsonify({"ok": True, "result": result.__dict__})
+    return jsonify({"ok": True, "result": result.to_dict()})
 
 
 @app.before_request

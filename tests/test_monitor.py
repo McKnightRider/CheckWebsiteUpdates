@@ -1,12 +1,26 @@
+import json
+import tempfile
 import threading
 import time
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import monitor
 import requests
 
-from monitor import MonitorResult, MonitorService, calculate_digest, run_monitor_check, send_notification
+from monitor import (
+    EmailSettings,
+    MonitorResult,
+    MonitorService,
+    PageChange,
+    build_page_digests,
+    calculate_digest,
+    run_monitor_check,
+    send_email_notification,
+    send_notification,
+    write_site_files,
+)
 
 
 class MonitorTests(unittest.TestCase):
@@ -17,35 +31,89 @@ class MonitorTests(unittest.TestCase):
         }
         self.assertEqual(calculate_digest(content), calculate_digest(dict(reversed(content.items()))))
 
+    def test_build_page_digests_and_detected_changes_are_stable(self):
+        previous = build_page_digests(
+            {
+                "https://example.com": "A",
+                "https://example.com/removed": "Gone",
+            }
+        )
+        current = build_page_digests(
+            {
+                "https://example.com": "B",
+                "https://example.com/new": "New",
+            }
+        )
+
+        changes = monitor.detect_page_changes(previous, current)
+
+        self.assertEqual(
+            changes,
+            [
+                PageChange(url="https://example.com", change_type="updated"),
+                PageChange(url="https://example.com/new", change_type="added"),
+                PageChange(url="https://example.com/removed", change_type="removed"),
+            ],
+        )
+
+    @patch("monitor.send_email_notification")
     @patch("monitor.send_notification")
+    @patch("monitor.write_site_files")
+    @patch("monitor._append_history")
     @patch("monitor.crawl_site")
-    def test_change_detection_triggers_notification(self, crawl_site_mock, send_notification_mock):
+    def test_change_detection_triggers_notifications_and_tracks_pages(
+        self,
+        crawl_site_mock,
+        append_history_mock,
+        write_site_files_mock,
+        send_notification_mock,
+        send_email_notification_mock,
+    ):
         crawl_site_mock.side_effect = [
             {"https://example.com": "A"},
-            {"https://example.com": "B"},
+            {"https://example.com": "B", "https://example.com/new": "C"},
         ]
+        append_history_mock.side_effect = lambda history_path, result, limit=100: [result.to_dict()]
 
-        with patch("monitor._write_state") as write_state_mock, patch(
-            "monitor._read_previous_digest"
-        ) as read_previous_mock:
-            first_digest = calculate_digest({"https://example.com": "A"})
-            read_previous_mock.side_effect = [None, first_digest]
+        first_digest = calculate_digest({"https://example.com": "A"})
+        first_page_digests = build_page_digests({"https://example.com": "A"})
+
+        with patch("monitor._write_state") as write_state_mock, patch("monitor._read_state") as read_state_mock:
+            read_state_mock.side_effect = [
+                None,
+                {"digest": first_digest, "page_digests": first_page_digests},
+            ]
 
             first = run_monitor_check(
                 start_url="https://example.com",
                 state_path="/tmp/state.json",
                 webhook_url="https://hooks.example.com",
+                history_path="/tmp/history.json",
+                site_output_dir="/tmp/site",
+                email_settings=EmailSettings(),
             )
             second = run_monitor_check(
                 start_url="https://example.com",
                 state_path="/tmp/state.json",
                 webhook_url="https://hooks.example.com",
+                history_path="/tmp/history.json",
+                site_output_dir="/tmp/site",
+                email_settings=EmailSettings(),
             )
 
         self.assertFalse(first.changed)
         self.assertTrue(second.changed)
         self.assertEqual(write_state_mock.call_count, 2)
         send_notification_mock.assert_called_once()
+        send_email_notification_mock.assert_called_once()
+        write_site_files_mock.assert_called()
+        self.assertEqual(
+            second.page_changes,
+            [
+                PageChange(url="https://example.com", change_type="updated"),
+                PageChange(url="https://example.com/new", change_type="added"),
+            ],
+        )
 
     @patch("monitor.requests.post")
     def test_send_notification_posts_expected_payload(self, post_mock):
@@ -55,6 +123,7 @@ class MonitorTests(unittest.TestCase):
             current_digest="new",
             previous_digest="old",
             page_count=3,
+            page_changes=[PageChange(url="https://example.com/a", change_type="updated")],
         )
 
         send_notification("https://hooks.example.com", result)
@@ -64,8 +133,7 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(kwargs["timeout"], 20)
         self.assertEqual(kwargs["json"]["checked_at"], result.checked_at)
         self.assertIn("website change detected", kwargs["json"]["text"])
-        self.assertIn("Previous digest: old", kwargs["json"]["text"])
-        self.assertIn("Current digest: new", kwargs["json"]["text"])
+        self.assertIn("Changed pages: updated: https://example.com/a", kwargs["json"]["text"])
 
     @patch("monitor.requests.post")
     def test_send_notification_raises_for_webhook_error(self, post_mock):
@@ -76,6 +144,7 @@ class MonitorTests(unittest.TestCase):
             current_digest="new",
             previous_digest="old",
             page_count=3,
+            page_changes=[PageChange(url="https://example.com/a", change_type="updated")],
         )
 
         with self.assertRaises(requests.HTTPError):
@@ -89,9 +158,79 @@ class MonitorTests(unittest.TestCase):
             current_digest="new",
             previous_digest="old",
             page_count=3,
+            page_changes=[PageChange(url="https://example.com/a", change_type="updated")],
         )
         send_notification("", result)
         post_mock.assert_not_called()
+
+    @patch("monitor.smtplib.SMTP")
+    def test_send_email_notification_includes_changed_pages(self, smtp_mock):
+        result = MonitorResult(
+            checked_at="2026-01-01T00:00:00+00:00",
+            changed=True,
+            current_digest="new",
+            previous_digest="old",
+            page_count=3,
+            page_changes=[PageChange(url="https://example.com/a", change_type="updated")],
+        )
+        settings = EmailSettings(
+            "smtp.example.com",
+            587,
+            "user",
+            "secret",
+            "alerts@example.com",
+            "mcknightrider@hotmail.com",
+            True,
+        )
+
+        send_email_notification(settings, result)
+
+        smtp_mock.assert_called_once_with("smtp.example.com", 587, timeout=20)
+        smtp = smtp_mock.return_value.__enter__.return_value
+        smtp.starttls.assert_called_once()
+        smtp.login.assert_called_once_with("user", "secret")
+        smtp.send_message.assert_called_once()
+        sent_message = smtp.send_message.call_args.args[0]
+        self.assertIn("https://example.com/a", sent_message.get_content())
+        self.assertEqual(sent_message["To"], "mcknightrider@hotmail.com")
+
+    @patch("monitor.smtplib.SMTP")
+    def test_send_email_notification_skips_when_incomplete(self, smtp_mock):
+        result = MonitorResult(
+            checked_at="2026-01-01T00:00:00+00:00",
+            changed=True,
+            current_digest="new",
+            previous_digest="old",
+            page_count=3,
+            page_changes=[PageChange(url="https://example.com/a", change_type="updated")],
+        )
+
+        send_email_notification(EmailSettings(), result)
+
+        smtp_mock.assert_not_called()
+
+    def test_write_site_files_outputs_html_and_history(self):
+        history = [
+            {
+                "checked_at": "2026-01-01T00:00:00+00:00",
+                "changed": True,
+                "current_digest": "new",
+                "previous_digest": "old",
+                "page_count": 2,
+                "page_changes": [{"url": "https://example.com/a", "change_type": "updated"}],
+            }
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "site"
+            write_site_files(str(output_dir), "https://example.com", history)
+
+            index_html = (output_dir / "index.html").read_text(encoding="utf-8")
+            history_json = json.loads((output_dir / "history.json").read_text(encoding="utf-8"))
+
+        self.assertIn("Latest check", index_html)
+        self.assertIn("https://example.com/a", index_html)
+        self.assertEqual(history_json, history)
 
     @patch("monitor.run_monitor_check")
     def test_perform_check_serializes_concurrent_calls(self, run_check_mock):

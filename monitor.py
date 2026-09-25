@@ -4,11 +4,15 @@ import logging
 import os
 import queue
 import re
+import smtplib
 import threading
 import tempfile
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, Optional, TextIO
+from email.message import EmailMessage
+from html import escape
+from pathlib import Path
+from typing import Any, Dict, Optional, TextIO
 from urllib.parse import urldefrag, urljoin, urlparse
 
 import requests
@@ -20,6 +24,14 @@ except ImportError:  # pragma: no cover - non-Unix
     fcntl = None
 
 logger = logging.getLogger(__name__)
+DEFAULT_SITE_URL = "https://www.cdsdeterminationscommittees.org"
+DEFAULT_EMAIL_TO = "mcknightrider@hotmail.com"
+
+
+@dataclass(frozen=True)
+class PageChange:
+    url: str
+    change_type: str
 
 
 @dataclass
@@ -29,11 +41,55 @@ class MonitorResult:
     current_digest: str
     previous_digest: Optional[str]
     page_count: int
+    page_changes: list[PageChange] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "checked_at": self.checked_at,
+            "changed": self.changed,
+            "current_digest": self.current_digest,
+            "previous_digest": self.previous_digest,
+            "page_count": self.page_count,
+            "page_changes": [asdict(change) for change in self.page_changes],
+        }
+
+
+@dataclass
+class EmailSettings:
+    smtp_host: str = ""
+    smtp_port: int = 587
+    username: str = ""
+    password: str = ""
+    from_address: str = ""
+    to_address: str = DEFAULT_EMAIL_TO
+    use_tls: bool = True
+
+    @classmethod
+    def from_env(cls) -> "EmailSettings":
+        smtp_port = os.getenv("EMAIL_SMTP_PORT", "587")
+        smtp_password = os.getenv("EMAIL_SMTP_PASSWORD", "")
+        use_tls = os.getenv("EMAIL_USE_TLS", "true").lower() not in {"0", "false", "no"}
+        try:
+            parsed_port = int(smtp_port)
+        except ValueError:
+            parsed_port = 587
+
+        return cls(
+            os.getenv("EMAIL_SMTP_HOST", ""),
+            parsed_port,
+            os.getenv("EMAIL_SMTP_USERNAME", ""),
+            smtp_password,
+            os.getenv("EMAIL_FROM", ""),
+            os.getenv("EMAIL_TO", DEFAULT_EMAIL_TO),
+            use_tls,
+        )
+
 
 
 def _normalize_url(raw_url: str) -> str:
     normalized, _ = urldefrag(raw_url)
     return normalized.rstrip("/") or normalized
+
 
 
 def _extract_links(html: str, page_url: str, allowed_host: str) -> set[str]:
@@ -50,11 +106,12 @@ def _extract_links(html: str, page_url: str, allowed_host: str) -> set[str]:
     return links
 
 
+
 def _normalize_text(html: str) -> str:
     soup = BeautifulSoup(html, "html.parser")
     text = soup.get_text(" ", strip=True)
-    text = re.sub(r"\s+", " ", text)
-    return text
+    return re.sub(r"\s+", " ", text)
+
 
 
 def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[str, str]:
@@ -79,8 +136,7 @@ def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[
             if "text/html" not in response.headers.get("content-type", ""):
                 continue
 
-            text = _normalize_text(response.text)
-            content_by_url[current] = text
+            content_by_url[current] = _normalize_text(response.text)
 
             for link in _extract_links(response.text, current, allowed_host):
                 if link not in visited:
@@ -89,6 +145,17 @@ def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[
             logger.warning("Failed to fetch %s: %s", current, exc)
 
     return content_by_url
+
+
+
+def _digest_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+
+def build_page_digests(content_by_url: Dict[str, str]) -> Dict[str, str]:
+    return {url: _digest_text(content) for url, content in content_by_url.items()}
+
 
 
 def calculate_digest(content_by_url: Dict[str, str]) -> str:
@@ -101,27 +168,62 @@ def calculate_digest(content_by_url: Dict[str, str]) -> str:
     return hasher.hexdigest()
 
 
-def _read_previous_digest(state_path: str) -> Optional[str]:
+
+def detect_page_changes(previous_page_digests: Dict[str, str], current_page_digests: Dict[str, str]) -> list[PageChange]:
+    changes: list[PageChange] = []
+    for url in sorted(set(previous_page_digests) | set(current_page_digests)):
+        if url not in previous_page_digests:
+            changes.append(PageChange(url=url, change_type="added"))
+        elif url not in current_page_digests:
+            changes.append(PageChange(url=url, change_type="removed"))
+        elif previous_page_digests[url] != current_page_digests[url]:
+            changes.append(PageChange(url=url, change_type="updated"))
+    return changes
+
+
+
+def _read_state(state_path: str) -> Optional[dict[str, Any]]:
     if not os.path.exists(state_path):
         return None
 
     with open(state_path, "r", encoding="utf-8") as fh:
-        state = json.load(fh)
+        return json.load(fh)
+
+
+
+def _read_previous_digest(state_path: str) -> Optional[str]:
+    state = _read_state(state_path)
+    if not state:
+        return None
     return state.get("digest")
 
 
-def _write_state(state_path: str, digest: str) -> None:
-    parent_dir = os.path.dirname(state_path)
+
+def _atomic_write_json(path: str, payload: Any) -> None:
+    parent_dir = os.path.dirname(path)
     if parent_dir:
         os.makedirs(parent_dir, exist_ok=True)
-    state = {"digest": digest, "updated_at": datetime.now(timezone.utc).isoformat()}
     write_dir = parent_dir or "."
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=write_dir, delete=False) as fh:
-        json.dump(state, fh)
+        json.dump(payload, fh, indent=2)
+        fh.write("\n")
         fh.flush()
         os.fsync(fh.fileno())
         temp_path = fh.name
-    os.replace(temp_path, state_path)
+    os.replace(temp_path, path)
+
+
+
+def _write_state(state_path: str, digest: str, page_digests: Dict[str, str]) -> None:
+    _atomic_write_json(
+        state_path,
+        {
+            "digest": digest,
+            "page_digests": page_digests,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+
 
 
 def _with_state_lock(state_path: str):
@@ -135,22 +237,212 @@ def _with_state_lock(state_path: str):
     return lock_file
 
 
+
+def _load_history(history_path: str) -> list[dict[str, Any]]:
+    if not os.path.exists(history_path):
+        return []
+
+    with open(history_path, "r", encoding="utf-8") as fh:
+        history = json.load(fh)
+
+    return history if isinstance(history, list) else []
+
+
+
+def _append_history(history_path: Optional[str], result: MonitorResult, limit: int = 100) -> list[dict[str, Any]]:
+    if not history_path:
+        return [result.to_dict()]
+
+    history = _load_history(history_path)
+    history.append(result.to_dict())
+    trimmed_history = history[-limit:]
+    _atomic_write_json(history_path, trimmed_history)
+    return trimmed_history
+
+
+
+def _format_timestamp(timestamp: str) -> str:
+    try:
+        return datetime.fromisoformat(timestamp).astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    except ValueError:
+        return timestamp
+
+
+
+def _render_change_items(changes: list[dict[str, str]]) -> str:
+    if not changes:
+        return "<li>No page changes detected.</li>"
+
+    items = []
+    for change in changes:
+        change_type = escape(change["change_type"].title())
+        url = escape(change["url"])
+        items.append(f'<li><strong>{change_type}</strong>: <a href="{url}">{url}</a></li>')
+    return "".join(items)
+
+
+
+def generate_site_html(start_url: str, history: list[dict[str, Any]]) -> str:
+    latest = history[-1] if history else None
+    title = "CDS Determinations Committee Monitor"
+
+    if latest:
+        latest_summary = f"""
+        <section class=\"card\">
+          <h2>Latest check</h2>
+          <p><strong>Checked at:</strong> {escape(_format_timestamp(latest['checked_at']))}</p>
+          <p><strong>Status:</strong> {'Changes detected' if latest['changed'] else 'No changes detected'}</p>
+          <p><strong>Pages checked:</strong> {latest['page_count']}</p>
+          <ul>{_render_change_items(latest.get('page_changes', []))}</ul>
+        </section>
+        """
+    else:
+        latest_summary = """
+        <section class=\"card\">
+          <h2>Latest check</h2>
+          <p>No checks have run yet.</p>
+        </section>
+        """
+
+    history_markup = "".join(
+        f"""
+        <article class=\"card history-item\">
+          <h3>{escape(_format_timestamp(entry['checked_at']))}</h3>
+          <p><strong>Status:</strong> {'Changes detected' if entry['changed'] else 'No changes detected'}</p>
+          <p><strong>Pages checked:</strong> {entry['page_count']}</p>
+          <ul>{_render_change_items(entry.get('page_changes', []))}</ul>
+        </article>
+        """
+        for entry in reversed(history)
+    ) or "<p>No checks have run yet.</p>"
+
+    return f"""<!DOCTYPE html>
+<html lang=\"en\">
+  <head>
+    <meta charset=\"utf-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+    <title>{title}</title>
+    <style>
+      :root {{
+        color-scheme: light dark;
+        font-family: Arial, sans-serif;
+      }}
+      body {{
+        margin: 0;
+        padding: 2rem;
+        background: #0f172a;
+        color: #e2e8f0;
+      }}
+      a {{
+        color: #93c5fd;
+      }}
+      .layout {{
+        max-width: 960px;
+        margin: 0 auto;
+      }}
+      .card {{
+        background: rgba(15, 23, 42, 0.75);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+      }}
+      .history-item h3 {{
+        margin-top: 0;
+      }}
+      ul {{
+        padding-left: 1.25rem;
+      }}
+    </style>
+  </head>
+  <body>
+    <main class=\"layout\">
+      <section class=\"card\">
+        <h1>{title}</h1>
+        <p>This site tracks checks against <a href=\"{escape(start_url)}\">{escape(start_url)}</a>.</p>
+      </section>
+      {latest_summary}
+      <section class=\"card\">
+        <h2>Recent checks</h2>
+        {history_markup}
+      </section>
+    </main>
+  </body>
+</html>
+"""
+
+
+
+def write_site_files(site_output_dir: Optional[str], start_url: str, history: list[dict[str, Any]]) -> None:
+    if not site_output_dir:
+        return
+
+    output_dir = Path(site_output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "index.html").write_text(generate_site_html(start_url=start_url, history=history), encoding="utf-8")
+    (output_dir / "history.json").write_text(json.dumps(history, indent=2) + "\n", encoding="utf-8")
+
+
+
 def send_notification(webhook_url: str, result: MonitorResult) -> None:
     if not webhook_url:
         logger.info("Change detected but NOTIFICATION_WEBHOOK_URL is not configured")
         return
 
+    changed_pages = "; ".join(f"{change.change_type}: {change.url}" for change in result.page_changes)
+    if not changed_pages:
+        changed_pages = "No page details available"
+
     payload = {
         "text": (
             "CDS Determinations Committee website change detected. "
             f"Pages checked: {result.page_count}. "
+            f"Changed pages: {changed_pages}. "
             f"Previous digest: {result.previous_digest}. "
             f"Current digest: {result.current_digest}."
         ),
         "checked_at": result.checked_at,
+        "page_changes": [asdict(change) for change in result.page_changes],
     }
     response = requests.post(webhook_url, json=payload, timeout=20)
     response.raise_for_status()
+
+
+
+def send_email_notification(email_settings: EmailSettings, result: MonitorResult) -> None:
+    if not email_settings.smtp_host or not email_settings.from_address:
+        logger.info("Change detected but email settings are incomplete")
+        return
+
+    message = EmailMessage()
+    message["Subject"] = "CDS Determinations Committee website change detected"
+    message["From"] = email_settings.from_address
+    message["To"] = email_settings.to_address
+
+    page_lines = "\n".join(f"- {change.change_type.title()}: {change.url}" for change in result.page_changes)
+    if not page_lines:
+        page_lines = "- A change was detected, but no page details were captured."
+
+    message.set_content(
+        "\n".join(
+            [
+                "A change was detected on the CDS Determinations Committee website.",
+                f"Checked at: {result.checked_at}",
+                f"Pages checked: {result.page_count}",
+                "Changed pages:",
+                page_lines,
+            ]
+        )
+    )
+
+    with smtplib.SMTP(email_settings.smtp_host, email_settings.smtp_port, timeout=20) as smtp:
+        if email_settings.use_tls:
+            smtp.starttls()
+        if email_settings.username:
+            smtp.login(email_settings.username, email_settings.password)
+        smtp.send_message(message)
+
 
 
 def run_monitor_check(
@@ -158,24 +450,40 @@ def run_monitor_check(
     state_path: str,
     webhook_url: str,
     max_pages: int = 200,
+    history_path: Optional[str] = None,
+    site_output_dir: Optional[str] = None,
+    email_settings: Optional[EmailSettings] = None,
+    history_limit: int = 100,
 ) -> MonitorResult:
     with _with_state_lock(state_path):
         contents = crawl_site(start_url=start_url, max_pages=max_pages)
+        current_page_digests = build_page_digests(contents)
         current_digest = calculate_digest(contents)
-        previous_digest = _read_previous_digest(state_path)
-        changed = previous_digest is not None and previous_digest != current_digest
-        _write_state(state_path, current_digest)
 
-    result = MonitorResult(
-        checked_at=datetime.now(timezone.utc).isoformat(),
-        changed=changed,
-        current_digest=current_digest,
-        previous_digest=previous_digest,
-        page_count=len(contents),
-    )
+        previous_state = _read_state(state_path) or {}
+        previous_digest = previous_state.get("digest")
+        previous_page_digests = previous_state.get("page_digests") or {}
+        changed = previous_digest is not None and previous_digest != current_digest
+        page_changes = detect_page_changes(previous_page_digests, current_page_digests) if changed else []
+
+        _write_state(state_path, current_digest, current_page_digests)
+
+        result = MonitorResult(
+            checked_at=datetime.now(timezone.utc).isoformat(),
+            changed=changed,
+            current_digest=current_digest,
+            previous_digest=previous_digest,
+            page_count=len(contents),
+            page_changes=page_changes,
+        )
+        history = _append_history(history_path, result, limit=history_limit)
+
+    write_site_files(site_output_dir, start_url=start_url, history=history)
 
     if changed:
         send_notification(webhook_url=webhook_url, result=result)
+        if email_settings is not None:
+            send_email_notification(email_settings=email_settings, result=result)
 
     return result
 
@@ -187,11 +495,17 @@ class MonitorService:
         state_path: str,
         webhook_url: str,
         interval_seconds: int = 12 * 60 * 60,
+        history_path: Optional[str] = None,
+        site_output_dir: Optional[str] = None,
+        email_settings: Optional[EmailSettings] = None,
     ):
         self.start_url = start_url
         self.state_path = state_path
         self.webhook_url = webhook_url
         self.interval_seconds = interval_seconds
+        self.history_path = history_path
+        self.site_output_dir = site_output_dir
+        self.email_settings = email_settings
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
         self._check_lock = threading.Lock()
@@ -204,6 +518,9 @@ class MonitorService:
                 start_url=self.start_url,
                 state_path=self.state_path,
                 webhook_url=self.webhook_url,
+                history_path=self.history_path,
+                site_output_dir=self.site_output_dir,
+                email_settings=self.email_settings,
             )
             return self.last_result
 
@@ -246,3 +563,17 @@ class MonitorService:
                 fcntl.flock(self._leader_lock_file.fileno(), fcntl.LOCK_UN)
             self._leader_lock_file.close()
             self._leader_lock_file = None
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+    result = run_monitor_check(
+        start_url=os.getenv("START_URL", DEFAULT_SITE_URL),
+        state_path=os.getenv("STATE_PATH", "site_data/monitor_state.json"),
+        webhook_url=os.getenv("NOTIFICATION_WEBHOOK_URL", ""),
+        max_pages=int(os.getenv("MAX_PAGES", "200")),
+        history_path=os.getenv("HISTORY_PATH", "site_data/history.json"),
+        site_output_dir=os.getenv("SITE_OUTPUT_DIR", "site"),
+        email_settings=EmailSettings.from_env(),
+    )
+    print(json.dumps(result.to_dict(), indent=2))
