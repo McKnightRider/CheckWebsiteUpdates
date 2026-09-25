@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .venv/
 data/
+site/
+site_data/*.lock
+site_data/*.leader.lock
