@@ -5,7 +5,6 @@ import os
 import queue
 import re
 import threading
-import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, Optional
@@ -106,7 +105,9 @@ def _read_previous_digest(state_path: str) -> Optional[str]:
 
 
 def _write_state(state_path: str, digest: str) -> None:
-    os.makedirs(os.path.dirname(state_path), exist_ok=True)
+    parent_dir = os.path.dirname(state_path)
+    if parent_dir:
+        os.makedirs(parent_dir, exist_ok=True)
     with open(state_path, "w", encoding="utf-8") as fh:
         json.dump({"digest": digest, "updated_at": datetime.now(timezone.utc).isoformat()}, fh)
 
@@ -169,16 +170,22 @@ class MonitorService:
         self.interval_seconds = interval_seconds
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
+        self._check_lock = threading.Lock()
         self.last_result: Optional[MonitorResult] = None
+
+    def perform_check(self) -> MonitorResult:
+        with self._check_lock:
+            self.last_result = run_monitor_check(
+                start_url=self.start_url,
+                state_path=self.state_path,
+                webhook_url=self.webhook_url,
+            )
+            return self.last_result
 
     def _loop(self) -> None:
         while not self._stop_event.is_set():
             try:
-                self.last_result = run_monitor_check(
-                    start_url=self.start_url,
-                    state_path=self.state_path,
-                    webhook_url=self.webhook_url,
-                )
+                self.perform_check()
                 logger.info("Completed monitor check: %s", self.last_result)
             except Exception as exc:  # pragma: no cover
                 logger.exception("Monitor check failed: %s", exc)

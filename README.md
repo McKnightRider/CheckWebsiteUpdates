@@ -25,8 +25,9 @@ The app starts a web server (Flask default) and a background monitor.
 
 - `NOTIFICATION_WEBHOOK_URL` (optional): webhook URL to receive change notifications.
 - `STATE_PATH` (optional, default `data/state.json`): file where the last digest is stored.
+- `CHECK_NOW_TOKEN` (optional but recommended): required token for `POST /check-now`, sent as `X-Check-Token` header.
 
 ## Endpoints
 
 - `GET /` - monitor status and last check result
-- `POST /check-now` - trigger an immediate check
+- `POST /check-now` - trigger an immediate check (requires `X-Check-Token` header matching `CHECK_NOW_TOKEN`)

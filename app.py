@@ -1,15 +1,17 @@
 import logging
 import os
+from hmac import compare_digest
 
-from flask import Flask, jsonify
+from flask import Flask, abort, jsonify, request
 
-from monitor import MonitorService, run_monitor_check
+from monitor import MonitorService
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
 START_URL = "https://www.cdsdeterminationscommittees.org"
 STATE_PATH = os.getenv("STATE_PATH", "data/state.json")
 WEBHOOK_URL = os.getenv("NOTIFICATION_WEBHOOK_URL", "")
+CHECK_NOW_TOKEN = os.getenv("CHECK_NOW_TOKEN", "")
 
 app = Flask(__name__)
 service = MonitorService(
@@ -42,16 +44,14 @@ def index():
 
 @app.post("/check-now")
 def check_now():
-    service.last_result = run_monitor_check(
-        start_url=START_URL,
-        state_path=STATE_PATH,
-        webhook_url=WEBHOOK_URL,
-    )
+    submitted_token = request.headers.get("X-Check-Token", "")
+    if not CHECK_NOW_TOKEN or not compare_digest(submitted_token, CHECK_NOW_TOKEN):
+        abort(403)
+
+    service.last_result = service.perform_check()
     return jsonify({"ok": True, "result": service.last_result.__dict__})
 
 
-service.start()
-
-
 if __name__ == "__main__":
+    service.start()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")))

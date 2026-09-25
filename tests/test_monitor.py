@@ -1,7 +1,9 @@
 import unittest
 from unittest.mock import patch
 
-from monitor import calculate_digest, run_monitor_check
+import requests
+
+from monitor import MonitorResult, calculate_digest, run_monitor_check, send_notification
 
 
 class MonitorTests(unittest.TestCase):
@@ -41,6 +43,40 @@ class MonitorTests(unittest.TestCase):
         self.assertTrue(second.changed)
         self.assertEqual(write_state_mock.call_count, 2)
         send_notification_mock.assert_called_once()
+
+    @patch("monitor.requests.post")
+    def test_send_notification_posts_expected_payload(self, post_mock):
+        result = MonitorResult(
+            checked_at="2026-01-01T00:00:00+00:00",
+            changed=True,
+            current_digest="new",
+            previous_digest="old",
+            page_count=3,
+        )
+
+        send_notification("https://hooks.example.com", result)
+
+        post_mock.assert_called_once()
+        _, kwargs = post_mock.call_args
+        self.assertEqual(kwargs["timeout"], 20)
+        self.assertEqual(kwargs["json"]["checked_at"], result.checked_at)
+        self.assertIn("website change detected", kwargs["json"]["text"])
+        self.assertIn("Previous digest: old", kwargs["json"]["text"])
+        self.assertIn("Current digest: new", kwargs["json"]["text"])
+
+    @patch("monitor.requests.post")
+    def test_send_notification_raises_for_webhook_error(self, post_mock):
+        post_mock.return_value.raise_for_status.side_effect = requests.HTTPError("boom")
+        result = MonitorResult(
+            checked_at="2026-01-01T00:00:00+00:00",
+            changed=True,
+            current_digest="new",
+            previous_digest="old",
+            page_count=3,
+        )
+
+        with self.assertRaises(requests.HTTPError):
+            send_notification("https://hooks.example.com", result)
 
 
 if __name__ == "__main__":
