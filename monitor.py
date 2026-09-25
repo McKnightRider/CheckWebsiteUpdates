@@ -296,7 +296,12 @@ def get_monitored_urls(start_url: str, raw_urls: Optional[list[str]] = None) -> 
     if canonical_port == default_port_for_scheme:
         canonical_port = None
 
-    selected_urls = raw_urls or list(DEFAULT_MONITORED_URLS)
+    if raw_urls is not None:
+        selected_urls = raw_urls
+    elif normalized_start_url == _normalize_url(DEFAULT_SITE_URL):
+        selected_urls = list(DEFAULT_MONITORED_URLS)
+    else:
+        selected_urls = [normalized_start_url]
     normalized_urls: list[str] = []
     seen_urls: set[str] = set()
     for raw_url in selected_urls:
@@ -821,11 +826,16 @@ def _build_history_csv(history: list[dict[str, Any]]) -> str:
 
 
 
-def generate_site_html(start_url: str, monitored_urls: list[str], history: list[dict[str, Any]]) -> str:
+def generate_site_html(
+    start_url: str,
+    monitored_urls: Optional[list[str]],
+    history: list[dict[str, Any]],
+) -> str:
     latest = history[-1] if history else None
     title = "DC Website Update Monitor"
+    displayed_monitored_urls = monitored_urls or [_normalize_url(start_url)]
     monitored_pages_markup = "".join(
-        f'<li><a href="{escape(url)}">{escape(url)}</a></li>' for url in monitored_urls
+        f'<li><a href="{escape(url)}">{escape(url)}</a></li>' for url in displayed_monitored_urls
     )
 
     if latest:
@@ -929,8 +939,8 @@ def _build_generated_website_manifest() -> str:
 def write_site_files(
     site_output_dir: Optional[str],
     start_url: str,
-    monitored_urls: list[str],
     history: list[dict[str, Any]],
+    monitored_urls: Optional[list[str]] = None,
 ) -> None:
     if not site_output_dir:
         return
