@@ -1,13 +1,11 @@
 # Check DC Website Updates
 
-A small website monitor for [cdsdeterminationscommittees.org](https://www.cdsdeterminationscommittees.org/) and its internal sub-pages.
+A small website monitor for selected high-priority pages on [cdsdeterminationscommittees.org](https://www.cdsdeterminationscommittees.org/).
 
 ## What it does
 
-- Crawls the CDS Determinations Committee site (including internal sub-pages)
-- Maintains a persisted canonical URL inventory for deterministic monitoring
+- Checks a focused set of important CDS Determinations Committee pages
 - Builds a content digest of fetched HTML pages
-- Separates URL discovery diagnostics from page-content change alerts
 - Runs checks every 12 hours
 - Tracks the date and time of each check plus the pages changed in that check
 - Publishes a GitHub Pages status site under `website/` with the latest check and recent history
@@ -36,10 +34,10 @@ python monitor.py
 ## Configuration
 
 - `START_URL` (optional, default `https://www.cdsdeterminationscommittees.org`): site to monitor.
+- `MONITORED_URLS` (optional): comma-separated list of specific pages to monitor. Defaults to the homepage, credit default swaps management, about DC committees, DC rules, and governance committee pages.
 - `NOTIFICATION_WEBHOOK_URL` (optional): webhook URL to receive change notifications.
 - `STATE_PATH` (optional, default `site_data/monitor_state.json`): file where the last site digest and per-page digests are stored.
 - `HISTORY_PATH` (optional, default `site_data/history.json`): file where recent check history is stored.
-- `STRUCTURE_CONFIRMATION_RUNS` (optional, default `2`): consecutive runs required before newly discovered or missing URLs are accepted into the canonical monitored URL inventory.
 - `SITE_OUTPUT_DIR` (optional, default `site`): base directory for the generated GitHub Pages site. The published assets are written under `site/website/`, then mirrored into the tracked repository `website/` folder by GitHub Actions.
 - `CHECK_NOW_TOKEN` (optional but recommended): required token for `POST /check-now`, sent as `X-Check-Token` header.
 - `CHECK_NOW_ALLOWED_ORIGINS` (optional, default `*`): comma-separated list of browser origins allowed to call `POST /check-now`.
@@ -59,6 +57,16 @@ python monitor.py
 ## Manual refresh from the website
 
 The generated website includes a **Refresh** form that calls the monitor app's `POST /check-now` endpoint from the browser. Enter the deployed monitor service endpoint URL and the check token when prompted. If you are viewing the static GitHub Pages site, use the full monitor service URL rather than a relative path.
+
+## Default monitored pages
+
+By default, checks and notifications are limited to these pages:
+
+- `https://www.cdsdeterminationscommittees.org/`
+- `https://www.cdsdeterminationscommittees.org/credit-default-swaps-management/`
+- `https://www.cdsdeterminationscommittees.org/about-dc-committees/`
+- `https://www.cdsdeterminationscommittees.org/dc-rules/`
+- `https://www.cdsdeterminationscommittees.org/governance-committee/`
 
 ## GitHub Pages workflow
 
