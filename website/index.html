@@ -19,13 +19,11 @@
       </section>
       <section class="card">
         <h2>Manual refresh</h2>
-        <form id="refresh-form" class="refresh-form">
-          <label for="refresh-endpoint">Check endpoint URL</label>
-          <input id="refresh-endpoint" name="refresh-endpoint" type="text" inputmode="url" value="/check-now" required>
-          <label for="refresh-token">Check token</label>
+        <form id="refresh-form" class="refresh-form" data-check-now-endpoint="/check-now">
+          <label for="refresh-token">Refresh PIN</label>
           <input id="refresh-token" name="refresh-token" type="password" autocomplete="off" required>
           <button id="refresh-button" type="submit">Refresh</button>
-          <p class="refresh-help">Use the monitor app&apos;s <code>/check-now</code> endpoint. If this site is hosted on GitHub Pages, enter the full URL of the deployed monitor service endpoint.</p>
+          <p class="refresh-help">Press Refresh to run a new check. Enter the private PIN configured on the monitor service.</p>
           <p id="refresh-status" class="refresh-status" aria-live="polite"></p>
         </form>
       </section>

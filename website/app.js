@@ -17,31 +17,29 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  const endpointInput = document.getElementById("refresh-endpoint");
+  const endpoint = refreshForm.getAttribute("data-check-now-endpoint") || "";
   const tokenInput = document.getElementById("refresh-token");
   const refreshButton = document.getElementById("refresh-button");
   const refreshStatus = document.getElementById("refresh-status");
-  const storedEndpoint = window.localStorage.getItem("check-now-endpoint");
-  if (endpointInput && storedEndpoint) {
-    endpointInput.value = storedEndpoint;
-  }
 
   refreshForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!endpointInput || !tokenInput || !refreshButton || !refreshStatus) {
+    if (!tokenInput || !refreshButton || !refreshStatus) {
       return;
     }
 
-    const endpoint = endpointInput.value.trim();
     const token = tokenInput.value;
-    if (!endpoint || !token) {
-      refreshStatus.textContent = "Enter the check endpoint URL and token.";
+    if (!endpoint) {
+      refreshStatus.textContent = "Refresh is not configured yet.";
+      return;
+    }
+    if (!token) {
+      refreshStatus.textContent = "Enter your refresh PIN.";
       return;
     }
 
     refreshStatus.textContent = "Refreshing…";
     refreshButton.disabled = true;
-    window.localStorage.setItem("check-now-endpoint", endpoint);
 
     try {
       const response = await fetch(endpoint, {
