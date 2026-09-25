@@ -1,5 +1,5 @@
 {
-  "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "digest": "c9752f9e78ab0e338719d04952b0c482c4c5ebfc8195de4436fe3619df2e9211",
   "page_digests": {
     "https://www.cdsdeterminationscommittees.org": "c7f814f37aa2bac246919483e9f1b9ba201c7c4af510d3e9b6138cb72269c856",
     "https://www.cdsdeterminationscommittees.org/about-dc-committees": "a3cb5ac9f0cf2539cceff3ae0cec8e037051a779092a2b672fe53c41af91b9ef",
@@ -16,5 +16,5 @@
   ],
   "pending_added": {},
   "pending_removed": {},
-  "updated_at": "2026-09-25T17:58:23.377615+00:00"
+  "updated_at": "2026-09-25T18:20:55.705720+00:00"
 }
