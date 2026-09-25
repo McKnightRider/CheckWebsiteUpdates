@@ -53,6 +53,10 @@ jobs:
         run: |
           mkdir -p site_data site
           python monitor.py
+          if [ ! -d site/website ]; then
+            echo "Expected generated site/website directory was not created"
+            exit 1
+          fi
           rm -rf website
           mkdir -p website
           cp -R site/website/. website/

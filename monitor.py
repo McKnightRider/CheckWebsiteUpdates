@@ -544,7 +544,7 @@ def generate_site_html(start_url: str, history: list[dict[str, Any]]) -> str:
         {history_markup}
       </section>
     </main>
-    <script src=\"app.js\"></script>
+    <script src=\"app.js\" defer></script>
   </body>
 </html>
 """
