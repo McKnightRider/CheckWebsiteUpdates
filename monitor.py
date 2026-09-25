@@ -15,6 +15,7 @@ from html import escape
 from pathlib import Path
 from typing import Any, Dict, Optional, TextIO
 from urllib.parse import urldefrag, urljoin, urlparse
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import requests
 from bs4 import BeautifulSoup
@@ -87,21 +88,77 @@ class EmailSettings:
 
 
 
-def _normalize_url(raw_url: str) -> str:
-    normalized, _ = urldefrag(raw_url)
+def _normalize_url(
+    raw_url: str,
+    canonical_host: Optional[str] = None,
+    canonical_scheme: Optional[str] = None,
+    canonical_port: Optional[int] = None,
+) -> str:
+    normalized, _ = urldefrag(raw_url.strip())
+    parsed = urlparse(normalized)
+    if parsed.scheme in {"http", "https"} and parsed.netloc:
+        host = (parsed.hostname or "").lower()
+        if not host:
+            return normalized.rstrip("/") or normalized
+        original_scheme = parsed.scheme.lower()
+        scheme = original_scheme
+        canonical_host_lower = canonical_host.lower() if canonical_host else None
+        try:
+            port = parsed.port
+        except ValueError:
+            return normalized.rstrip("/") or normalized
+        has_explicit_port = port is not None
+        if canonical_host_lower and host == canonical_host_lower:
+            host = canonical_host_lower
+            if canonical_scheme:
+                scheme = canonical_scheme.lower()
+            if canonical_port is not None:
+                port = canonical_port
+        default_port = 443 if scheme == "https" else 80
+        should_strip_default_port = canonical_port is not None or scheme == original_scheme
+        if has_explicit_port and canonical_port is not None:
+            should_strip_default_port = False
+        if should_strip_default_port and port == default_port:
+            port = None
+        userinfo = ""
+        if parsed.username is not None:
+            userinfo = parsed.username
+            if parsed.password is not None:
+                userinfo += f":{parsed.password}"
+            userinfo += "@"
+        netloc = f"{userinfo}{host}"
+        if port is not None:
+            netloc += f":{port}"
+        parsed = parsed._replace(scheme=scheme, netloc=netloc)
+        normalized = parsed.geturl()
     return normalized.rstrip("/") or normalized
 
 
 
-def _extract_links(html: str, page_url: str, allowed_host: str) -> set[str]:
+def _extract_links(
+    html: str,
+    page_url: str,
+    allowed_host: str,
+    allowed_port: int,
+    canonical_scheme: str,
+    canonical_port: Optional[int] = None,
+) -> set[str]:
     soup = BeautifulSoup(html, "html.parser")
     links = set()
     for anchor in soup.find_all("a", href=True):
-        candidate = _normalize_url(urljoin(page_url, anchor["href"]))
+        candidate = _normalize_url(
+            urljoin(page_url, anchor["href"]),
+            canonical_host=allowed_host,
+            canonical_scheme=canonical_scheme,
+            canonical_port=canonical_port,
+        )
         parsed = urlparse(candidate)
         if parsed.scheme not in {"http", "https"}:
             continue
-        if parsed.netloc != allowed_host:
+        if (parsed.hostname or "").lower() != allowed_host:
+            continue
+        candidate_port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        if candidate_port != allowed_port:
             continue
         links.add(candidate)
     return links
@@ -117,7 +174,20 @@ def _normalize_text(html: str) -> str:
 
 def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[str, str]:
     start_url = _normalize_url(start_url)
-    allowed_host = urlparse(start_url).netloc
+    parsed_start_url = urlparse(start_url)
+    allowed_host = (parsed_start_url.hostname or parsed_start_url.netloc).lower()
+    canonical_scheme = parsed_start_url.scheme.lower()
+    canonical_port = parsed_start_url.port
+    default_port_for_scheme = 443 if canonical_scheme == "https" else 80
+    allowed_port = canonical_port or default_port_for_scheme
+    if canonical_port == default_port_for_scheme:
+        canonical_port = None
+    start_url = _normalize_url(
+        start_url,
+        canonical_host=allowed_host,
+        canonical_scheme=canonical_scheme,
+        canonical_port=canonical_port,
+    )
 
     session = requests.Session()
     urls = queue.Queue()
@@ -139,7 +209,9 @@ def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[
 
             content_by_url[current] = _normalize_text(response.text)
 
-            for link in _extract_links(response.text, current, allowed_host):
+            for link in _extract_links(
+                response.text, current, allowed_host, allowed_port, canonical_scheme, canonical_port
+            ):
                 if link not in visited:
                     urls.put(link)
         except requests.RequestException as exc:
@@ -264,7 +336,26 @@ def _append_history(history_path: Optional[str], result: MonitorResult, limit: i
 
 def _format_timestamp(timestamp: str) -> str:
     try:
-        return datetime.fromisoformat(timestamp).astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        normalized_timestamp = timestamp.strip()
+        if normalized_timestamp.endswith(("Z", "z")):
+            normalized_timestamp = f"{normalized_timestamp[:-1]}+00:00"
+        parsed = datetime.fromisoformat(normalized_timestamp)
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        zone_abbr_override = None
+        try:
+            london_time = parsed.astimezone(ZoneInfo("Europe/London"))
+        except ZoneInfoNotFoundError:
+            london_time = parsed.astimezone(timezone.utc)
+            zone_abbr_override = "GMT"
+        month_name = london_time.strftime("%B")
+        hour_12 = london_time.hour % 12 or 12
+        am_pm = "AM" if london_time.hour < 12 else "PM"
+        zone_abbr = zone_abbr_override or london_time.tzname() or "GMT"
+        return (
+            f"{london_time.day} {month_name} {london_time.year} at "
+            f"{hour_12}:{london_time.minute:02d}:{london_time.second:02d} {am_pm} {zone_abbr}"
+        )
     except ValueError:
         return timestamp
 

@@ -269,6 +269,87 @@ class MonitorTests(unittest.TestCase):
         self.assertIn("javascript:alert(1)", index_html)
         self.assertNotIn('href="javascript:alert(1)"', index_html)
 
+    def test_normalize_url_canonicalizes_scheme_for_same_host(self):
+        normalized = monitor._normalize_url(
+            "http://www.example.com/path/",
+            canonical_host="www.example.com",
+            canonical_scheme="https",
+        )
+        self.assertEqual(normalized, "https://www.example.com/path")
+        normalized_with_port = monitor._normalize_url(
+            "https://www.example.com:443/path/",
+            canonical_host="www.example.com",
+            canonical_scheme="https",
+        )
+        self.assertEqual(normalized_with_port, "https://www.example.com/path")
+        normalized_with_non_default_port = monitor._normalize_url(
+            "https://www.example.com:8443/path/",
+            canonical_host="www.example.com",
+            canonical_scheme="https",
+            canonical_port=8443,
+        )
+        self.assertEqual(normalized_with_non_default_port, "https://www.example.com:8443/path")
+        normalized_with_explicit_default_port_and_canonical_port = monitor._normalize_url(
+            "https://www.example.com:443/path/",
+            canonical_host="www.example.com",
+            canonical_scheme="https",
+            canonical_port=443,
+        )
+        self.assertEqual(
+            normalized_with_explicit_default_port_and_canonical_port,
+            "https://www.example.com:443/path",
+        )
+        normalized_with_userinfo = monitor._normalize_url(
+            "https://user@www.example.com:8443/path/",
+            canonical_host="www.example.com",
+            canonical_scheme="https",
+            canonical_port=8443,
+        )
+        self.assertEqual(normalized_with_userinfo, "https://user@www.example.com:8443/path")
+        normalized_preserves_explicit_port_when_scheme_changes = monitor._normalize_url(
+            "http://www.example.com:443/path/",
+            canonical_host="www.example.com",
+            canonical_scheme="https",
+        )
+        self.assertEqual(normalized_preserves_explicit_port_when_scheme_changes, "https://www.example.com:443/path")
+
+    def test_extract_links_stays_within_same_origin_port(self):
+        html = """
+        <a href="https://www.example.com/path-a">A</a>
+        <a href="https://www.example.com:8443/path-b">B</a>
+        """
+        links = monitor._extract_links(
+            html=html,
+            page_url="https://www.example.com",
+            allowed_host="www.example.com",
+            allowed_port=443,
+            canonical_scheme="https",
+        )
+        self.assertEqual(links, {"https://www.example.com/path-a"})
+
+    def test_format_timestamp_uses_day_month_year_and_uk_timezone(self):
+        self.assertEqual(
+            monitor._format_timestamp("2026-09-25T12:48:20+00:00"),
+            "25 September 2026 at 1:48:20 PM BST",
+        )
+        self.assertEqual(
+            monitor._format_timestamp("2026-01-09T12:48:20+00:00"),
+            "9 January 2026 at 12:48:20 PM GMT",
+        )
+        with patch("monitor.ZoneInfo", side_effect=monitor.ZoneInfoNotFoundError("missing tzdata")):
+            self.assertEqual(
+                monitor._format_timestamp("2026-01-09T12:48:20+00:00"),
+                "9 January 2026 at 12:48:20 PM GMT",
+            )
+        self.assertEqual(
+            monitor._format_timestamp("2026-01-09T12:48:20Z"),
+            "9 January 2026 at 12:48:20 PM GMT",
+        )
+        self.assertEqual(
+            monitor._format_timestamp("2026-01-09T12:48:20"),
+            "9 January 2026 at 12:48:20 PM GMT",
+        )
+
     @patch("monitor.run_monitor_check")
     def test_perform_check_serializes_concurrent_calls(self, run_check_mock):
         service = MonitorService(
