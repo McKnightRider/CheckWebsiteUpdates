@@ -554,12 +554,11 @@ def _generate_site_redirect_html() -> str:
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta http-equiv="refresh" content="5; url=website/">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Redirecting…</title>
+    <title>Website entry</title>
   </head>
   <body>
-    <p>Redirecting to the website in 5 seconds… <a href="website/">Continue now</a>.</p>
+    <p>Open the published website: <a href="website/">Continue</a>.</p>
   </body>
 </html>
 """

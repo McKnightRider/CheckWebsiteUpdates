@@ -258,7 +258,8 @@ class MonitorTests(unittest.TestCase):
             stylesheet = (website_dir / "styles.css").read_text(encoding="utf-8")
             script = (website_dir / "app.js").read_text(encoding="utf-8")
 
-        self.assertIn('content="5; url=website/"', redirect_html)
+        self.assertIn('href="website/"', redirect_html)
+        self.assertNotIn("http-equiv", redirect_html)
         self.assertIn("Latest check", index_html)
         self.assertIn('href="history.csv"', index_html)
         self.assertIn('src="app.js"', index_html)
