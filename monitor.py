@@ -762,7 +762,7 @@ def _render_history_heading(checked_at: str, *, is_first_check: bool = False) ->
 
 
 def _extract_github_repository(remote_url: str) -> Optional[str]:
-    normalized_remote = remote_url.strip()
+    normalized_remote = remote_url.strip().rstrip("/")
     if not normalized_remote:
         return None
     for prefix in ("https://github.com/", "git@github.com:"):
@@ -778,7 +778,7 @@ def _extract_github_repository(remote_url: str) -> Optional[str]:
 
 
 def _normalize_github_repository(repository: str) -> Optional[str]:
-    owner, separator, repo = repository.strip().partition("/")
+    owner, separator, repo = repository.strip().strip("/").partition("/")
     if separator and owner and repo and "/" not in repo:
         return f"{owner}/{repo}"
     return None
@@ -791,7 +791,7 @@ def get_github_repository() -> Optional[str]:
     if normalized_repository:
         return normalized_repository
 
-    git_config_path = Path(".git/config")
+    git_config_path = Path(__file__).resolve().parent / ".git" / "config"
     if not git_config_path.is_file():
         return None
 

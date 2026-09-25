@@ -365,18 +365,21 @@ class MonitorTests(unittest.TestCase):
                 '[core]\n\trepositoryformatversion = 0\n[remote "origin"]\n\turl = git@github.com:octo/repo.git\n',
                 encoding="utf-8",
             )
-            previous_cwd = Path.cwd()
-            try:
-                os.chdir(repo_dir)
-                with patch.dict(os.environ, {"GITHUB_REPOSITORY": "invalid"}):
-                    repository = get_github_repository()
-            finally:
-                os.chdir(previous_cwd)
+            with patch.object(monitor, "__file__", str(repo_dir / "monitor.py")), patch.dict(
+                os.environ, {"GITHUB_REPOSITORY": "invalid"}
+            ):
+                repository = get_github_repository()
 
         self.assertEqual(repository, "octo/repo")
 
     def test_get_manual_refresh_workflow_url_returns_none_for_invalid_repository(self):
         self.assertIsNone(get_manual_refresh_workflow_url("invalid"))
+
+    def test_get_manual_refresh_workflow_url_accepts_trailing_slash(self):
+        self.assertEqual(
+            get_manual_refresh_workflow_url("octo/repo/"),
+            "https://github.com/octo/repo/actions/workflows/monitor-pages.yml",
+        )
 
     def test_write_site_files_does_not_link_unsafe_urls(self):
         history = [
