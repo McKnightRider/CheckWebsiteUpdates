@@ -235,6 +235,14 @@ class MonitorTests(unittest.TestCase):
                 "previous_digest": "old",
                 "page_count": 2,
                 "page_changes": [{"url": "https://example.com/a", "change_type": "updated"}],
+            },
+            {
+                "checked_at": "2026-01-02T00:00:00+00:00",
+                "changed": False,
+                "current_digest": "same",
+                "previous_digest": "same",
+                "page_count": 2,
+                "page_changes": [],
             }
         ]
 
@@ -260,6 +268,8 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(history_csv[0]["checked_at"], "2026-01-01T00:00:00+00:00")
         self.assertEqual(history_csv[0]["changed"], "true")
         self.assertIn('"url":"https://example.com/a"', history_csv[0]["page_changes"])
+        self.assertEqual(history_csv[1]["checked_at"], "2026-01-02T00:00:00+00:00")
+        self.assertEqual(history_csv[1]["changed"], "false")
         self.assertIn(".resource-list", stylesheet)
         self.assertIn("history-count", script)
 
