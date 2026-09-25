@@ -318,6 +318,33 @@ class MonitorTests(unittest.TestCase):
 
             self.assertFalse(stale_file.exists())
 
+    def test_write_site_files_replaces_symlinked_website_dir(self):
+        history = [
+            {
+                "checked_at": "2026-01-01T00:00:00+00:00",
+                "changed": False,
+                "current_digest": "same",
+                "previous_digest": "same",
+                "page_count": 1,
+                "page_changes": [],
+            }
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "site"
+            external_dir = Path(tmpdir) / "external"
+            external_dir.mkdir(parents=True, exist_ok=True)
+            protected_file = external_dir / "protected.txt"
+            protected_file.write_text("keep", encoding="utf-8")
+
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / "website").symlink_to(external_dir, target_is_directory=True)
+
+            write_site_files(str(output_dir), "https://example.com", history)
+
+            self.assertTrue(protected_file.exists())
+            self.assertTrue((output_dir / "website" / "index.html").exists())
+
     def test_normalize_url_canonicalizes_scheme_for_same_host(self):
         normalized = monitor._normalize_url(
             "http://www.example.com/path/",

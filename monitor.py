@@ -575,7 +575,9 @@ def write_site_files(site_output_dir: Optional[str], start_url: str, history: li
     output_dir = Path(site_output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     website_dir = output_dir / WEBSITE_DIRNAME
-    if website_dir.exists():
+    if website_dir.is_symlink():
+        website_dir.unlink()
+    elif website_dir.exists():
         shutil.rmtree(website_dir)
     website_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "index.html").write_text(_generate_site_redirect_html(), encoding="utf-8")
