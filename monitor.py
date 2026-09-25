@@ -107,6 +107,7 @@ def _normalize_url(
             port = parsed.port
         except ValueError:
             return normalized.rstrip("/") or normalized
+        has_explicit_port = port is not None
         if canonical_host_lower and host == canonical_host_lower:
             host = canonical_host_lower
             if canonical_scheme:
@@ -115,6 +116,8 @@ def _normalize_url(
                 port = canonical_port
         default_port = 443 if scheme == "https" else 80
         should_strip_default_port = canonical_port is not None or scheme == original_scheme
+        if has_explicit_port and canonical_port is not None:
+            should_strip_default_port = False
         if should_strip_default_port and port == default_port:
             port = None
         userinfo = ""

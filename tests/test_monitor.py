@@ -289,6 +289,16 @@ class MonitorTests(unittest.TestCase):
             canonical_port=8443,
         )
         self.assertEqual(normalized_with_non_default_port, "https://www.example.com:8443/path")
+        normalized_with_explicit_default_port_and_canonical_port = monitor._normalize_url(
+            "https://www.example.com:443/path/",
+            canonical_host="www.example.com",
+            canonical_scheme="https",
+            canonical_port=443,
+        )
+        self.assertEqual(
+            normalized_with_explicit_default_port_and_canonical_port,
+            "https://www.example.com:443/path",
+        )
         normalized_with_userinfo = monitor._normalize_url(
             "https://user@www.example.com:8443/path/",
             canonical_host="www.example.com",
