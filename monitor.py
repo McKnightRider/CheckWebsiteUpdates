@@ -11,13 +11,14 @@ import smtplib
 import ssl
 import threading
 import tempfile
+import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from email.message import EmailMessage
 from html import escape
 from pathlib import Path
 from typing import Any, Dict, Optional, TextIO
-from urllib.parse import urldefrag, urljoin, urlparse
+from urllib.parse import parse_qsl, urlencode, urldefrag, urljoin, urlparse
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import requests
@@ -41,6 +42,13 @@ GENERATED_WEBSITE_FILES = (
     "history.csv",
     GENERATED_WEBSITE_MANIFEST,
 )
+TRACKING_QUERY_PREFIXES = ("utm_",)
+TRACKING_QUERY_KEYS = {"gclid", "fbclid", "mc_cid", "mc_eid"}
+NOISY_PATH_PREFIXES = ("/category/", "/tag/", "/author/")
+NOISY_PATH_PATTERNS = (re.compile(r"/page/\d+/?$"),)
+DEFAULT_STRUCTURE_CONFIRMATION_RUNS = 2
+DEFAULT_FETCH_RETRIES = 2
+DEFAULT_FETCH_BACKOFF_SECONDS = 0.5
 WEBSITE_STYLESHEET = """\
 :root {
   color-scheme: light dark;
@@ -129,6 +137,7 @@ class MonitorResult:
     previous_digest: Optional[str]
     page_count: int
     page_changes: list[PageChange] = field(default_factory=list)
+    diagnostics: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -138,7 +147,15 @@ class MonitorResult:
             "previous_digest": self.previous_digest,
             "page_count": self.page_count,
             "page_changes": [asdict(change) for change in self.page_changes],
+            "diagnostics": self.diagnostics,
         }
+
+
+@dataclass
+class CrawlResult:
+    content_by_url: Dict[str, str]
+    discovered_urls: set[str]
+    fetch_failures: dict[str, str]
 
 
 @dataclass
@@ -214,9 +231,28 @@ def _normalize_url(
         netloc = f"{userinfo}{host}"
         if port is not None:
             netloc += f":{port}"
-        parsed = parsed._replace(scheme=scheme, netloc=netloc)
+        query_items = [
+            (key, value)
+            for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+            if not key.lower().startswith(TRACKING_QUERY_PREFIXES) and key.lower() not in TRACKING_QUERY_KEYS
+        ]
+        query = urlencode(sorted(query_items), doseq=True) if query_items else ""
+        parsed = parsed._replace(scheme=scheme, netloc=netloc, query=query)
         normalized = parsed.geturl()
     return normalized.rstrip("/") or normalized
+
+
+
+def _is_noise_url(url: str) -> bool:
+    parsed = urlparse(url)
+    path = parsed.path.lower()
+    if any(path.startswith(prefix) for prefix in NOISY_PATH_PREFIXES):
+        return True
+    if path == "/search":
+        return True
+    if any(pattern.search(path) for pattern in NOISY_PATH_PATTERNS):
+        return True
+    return False
 
 
 
@@ -245,6 +281,8 @@ def _extract_links(
         candidate_port = parsed.port or (443 if parsed.scheme == "https" else 80)
         if candidate_port != allowed_port:
             continue
+        if _is_noise_url(candidate):
+            continue
         links.add(candidate)
     return links
 
@@ -257,7 +295,36 @@ def _normalize_text(html: str) -> str:
 
 
 
-def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[str, str]:
+def _fetch_html_with_retries(
+    session: requests.Session,
+    url: str,
+    timeout: int,
+    retries: int,
+    backoff_seconds: float,
+) -> tuple[Optional[str], Optional[str]]:
+    last_error: Optional[str] = None
+    for attempt in range(retries + 1):
+        try:
+            response = session.get(url, timeout=timeout)
+            response.raise_for_status()
+            if "text/html" not in response.headers.get("content-type", ""):
+                return None, "non-html response"
+            return response.text, None
+        except requests.RequestException as exc:
+            last_error = str(exc)
+            if attempt < retries:
+                time.sleep(backoff_seconds * (2**attempt))
+    return None, last_error or "unknown fetch error"
+
+
+
+def crawl_site(
+    start_url: str,
+    max_pages: int = 200,
+    timeout: int = 20,
+    retries: int = DEFAULT_FETCH_RETRIES,
+    backoff_seconds: float = DEFAULT_FETCH_BACKOFF_SECONDS,
+) -> CrawlResult:
     start_url = _normalize_url(start_url)
     parsed_start_url = urlparse(start_url)
     allowed_host = (parsed_start_url.hostname or parsed_start_url.netloc).lower()
@@ -278,31 +345,36 @@ def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[
     urls = queue.Queue()
     urls.put(start_url)
     visited = set()
+    attempted = set()
     content_by_url: Dict[str, str] = {}
+    fetch_failures: dict[str, str] = {}
 
     while not urls.empty() and len(visited) < max_pages:
         current = urls.get()
-        if current in visited:
+        if current in visited or current in attempted:
             continue
-
+        attempted.add(current)
+        html, error = _fetch_html_with_retries(
+            session=session,
+            url=current,
+            timeout=timeout,
+            retries=retries,
+            backoff_seconds=backoff_seconds,
+        )
+        if html is None:
+            if error:
+                fetch_failures[current] = error
+                logger.warning("Failed to fetch %s: %s", current, error)
+            continue
         visited.add(current)
-        try:
-            response = session.get(current, timeout=timeout)
-            response.raise_for_status()
-            if "text/html" not in response.headers.get("content-type", ""):
-                continue
+        content_by_url[current] = _normalize_text(html)
+        for link in _extract_links(
+            html, current, allowed_host, allowed_port, canonical_scheme, canonical_port
+        ):
+            if link not in visited and link not in attempted:
+                urls.put(link)
 
-            content_by_url[current] = _normalize_text(response.text)
-
-            for link in _extract_links(
-                response.text, current, allowed_host, allowed_port, canonical_scheme, canonical_port
-            ):
-                if link not in visited:
-                    urls.put(link)
-        except requests.RequestException as exc:
-            logger.warning("Failed to fetch %s: %s", current, exc)
-
-    return content_by_url
+    return CrawlResult(content_by_url=content_by_url, discovered_urls=set(content_by_url), fetch_failures=fetch_failures)
 
 
 
@@ -340,6 +412,100 @@ def detect_page_changes(previous_page_digests: Dict[str, str], current_page_dige
 
 
 
+def calculate_digest_from_page_digests(page_digests: Dict[str, str]) -> str:
+    hasher = hashlib.sha256()
+    for url in sorted(page_digests):
+        hasher.update(url.encode("utf-8"))
+        hasher.update(b"\n")
+        hasher.update(page_digests[url].encode("utf-8"))
+        hasher.update(b"\n")
+    return hasher.hexdigest()
+
+
+
+def fetch_inventory_pages(
+    inventory_urls: set[str],
+    timeout: int = 20,
+    retries: int = DEFAULT_FETCH_RETRIES,
+    backoff_seconds: float = DEFAULT_FETCH_BACKOFF_SECONDS,
+) -> tuple[Dict[str, str], dict[str, str]]:
+    session = requests.Session()
+    content_by_url: Dict[str, str] = {}
+    failures: dict[str, str] = {}
+    for url in sorted(inventory_urls):
+        html, error = _fetch_html_with_retries(
+            session=session,
+            url=url,
+            timeout=timeout,
+            retries=retries,
+            backoff_seconds=backoff_seconds,
+        )
+        if html is None:
+            failures[url] = error or "unknown fetch error"
+            continue
+        content_by_url[url] = _normalize_text(html)
+    return content_by_url, failures
+
+
+
+def _as_str_int_map(payload: Any) -> dict[str, int]:
+    if not isinstance(payload, dict):
+        return {}
+    normalized: dict[str, int] = {}
+    for key, value in payload.items():
+        if not isinstance(key, str):
+            continue
+        try:
+            parsed_value = int(value)
+        except (TypeError, ValueError):
+            continue
+        if parsed_value > 0:
+            normalized[key] = parsed_value
+    return normalized
+
+
+
+def reconcile_inventory(
+    inventory_urls: set[str],
+    discovered_urls: set[str],
+    pending_added: dict[str, int],
+    pending_removed: dict[str, int],
+    confirmation_runs: int,
+    allow_removals: bool,
+) -> tuple[set[str], dict[str, int], dict[str, int], list[str]]:
+    diagnostics: list[str] = []
+    next_inventory = set(inventory_urls)
+
+    add_candidates = discovered_urls - inventory_urls
+    remove_candidates = inventory_urls - discovered_urls
+
+    next_pending_added = {url: pending_added.get(url, 0) + 1 for url in add_candidates}
+    confirmed_added = sorted(url for url, count in next_pending_added.items() if count >= confirmation_runs)
+    for url in confirmed_added:
+        next_inventory.add(url)
+        next_pending_added.pop(url, None)
+    if confirmed_added:
+        diagnostics.append(f"Confirmed new URLs ({len(confirmed_added)}): {', '.join(confirmed_added)}")
+
+    if allow_removals:
+        next_pending_removed = {url: pending_removed.get(url, 0) + 1 for url in remove_candidates}
+        confirmed_removed = sorted(url for url, count in next_pending_removed.items() if count >= confirmation_runs)
+        for url in confirmed_removed:
+            next_inventory.discard(url)
+            next_pending_removed.pop(url, None)
+        if confirmed_removed:
+            diagnostics.append(f"Confirmed removed URLs ({len(confirmed_removed)}): {', '.join(confirmed_removed)}")
+    else:
+        next_pending_removed = {}
+        if remove_candidates:
+            diagnostics.append(
+                f"Deferred {len(remove_candidates)} potential removals due to crawl failures in discovery."
+            )
+
+    return next_inventory, next_pending_added, next_pending_removed, diagnostics
+
+
+
 def _read_state(state_path: str) -> Optional[dict[str, Any]]:
     if not os.path.exists(state_path):
         return None
@@ -372,12 +538,22 @@ def _atomic_write_json(path: str, payload: Any) -> None:
 
 
 
-def _write_state(state_path: str, digest: str, page_digests: Dict[str, str]) -> None:
+def _write_state(
+    state_path: str,
+    digest: str,
+    page_digests: Dict[str, str],
+    canonical_urls: set[str],
+    pending_added: dict[str, int],
+    pending_removed: dict[str, int],
+) -> None:
     _atomic_write_json(
         state_path,
         {
             "digest": digest,
             "page_digests": page_digests,
+            "canonical_urls": sorted(canonical_urls),
+            "pending_added": pending_added,
+            "pending_removed": pending_removed,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         },
     )
@@ -475,6 +651,7 @@ def _build_history_csv(history: list[dict[str, Any]]) -> str:
             "previous_digest",
             "current_digest",
             "page_changes",
+            "diagnostics",
         ],
     )
     writer.writeheader()
@@ -488,6 +665,7 @@ def _build_history_csv(history: list[dict[str, Any]]) -> str:
                 "previous_digest": entry.get("previous_digest", "") or "",
                 "current_digest": entry.get("current_digest", "") or "",
                 "page_changes": json.dumps(entry.get("page_changes", []), separators=(",", ":")),
+                "diagnostics": json.dumps(entry.get("diagnostics", []), separators=(",", ":")),
             }
         )
     return rows.getvalue()
@@ -678,27 +856,90 @@ def run_monitor_check(
     site_output_dir: Optional[str] = None,
     email_settings: Optional[EmailSettings] = None,
     history_limit: int = 100,
+    structure_confirmation_runs: int = DEFAULT_STRUCTURE_CONFIRMATION_RUNS,
 ) -> MonitorResult:
     with _with_state_lock(state_path):
-        contents = crawl_site(start_url=start_url, max_pages=max_pages)
-        current_page_digests = build_page_digests(contents)
-        current_digest = calculate_digest(contents)
-
         previous_state = _read_state(state_path) or {}
         previous_digest = previous_state.get("digest")
         previous_page_digests = previous_state.get("page_digests") or {}
-        changed = previous_digest is not None and previous_digest != current_digest
-        page_changes = detect_page_changes(previous_page_digests, current_page_digests) if changed else []
+        diagnostics: list[str] = []
 
-        _write_state(state_path, current_digest, current_page_digests)
+        discovered = crawl_site(start_url=start_url, max_pages=max_pages)
+        diagnostics.append(
+            f"Discovery crawl found {len(discovered.discovered_urls)} URLs with {len(discovered.fetch_failures)} fetch failures."
+        )
+        if discovered.fetch_failures:
+            diagnostics.append(
+                f"Discovery fetch failures: {', '.join(sorted(discovered.fetch_failures)[:10])}"
+            )
+
+        normalized_start_url = _normalize_url(start_url)
+        inventory_urls = set(previous_state.get("canonical_urls") or [normalized_start_url])
+        pending_added = _as_str_int_map(previous_state.get("pending_added"))
+        pending_removed = _as_str_int_map(previous_state.get("pending_removed"))
+
+        inventory_urls, pending_added, pending_removed, inventory_diagnostics = reconcile_inventory(
+            inventory_urls=inventory_urls,
+            discovered_urls=discovered.discovered_urls | {normalized_start_url},
+            pending_added=pending_added,
+            pending_removed=pending_removed,
+            confirmation_runs=max(1, structure_confirmation_runs),
+            allow_removals=not discovered.fetch_failures,
+        )
+        diagnostics.extend(inventory_diagnostics)
+        diagnostics.append(f"Active canonical inventory size: {len(inventory_urls)}")
+
+        inventory_contents, inventory_failures = fetch_inventory_pages(inventory_urls=inventory_urls)
+        if inventory_failures:
+            diagnostics.append(
+                f"Inventory fetch failures: {', '.join(sorted(inventory_failures)[:10])}"
+            )
+
+        successful_page_digests = build_page_digests(inventory_contents)
+        effective_page_digests = dict(previous_page_digests)
+        effective_page_digests.update(successful_page_digests)
+        for removed_url in set(previous_page_digests) - inventory_urls:
+            effective_page_digests.pop(removed_url, None)
+        for stale_url in set(effective_page_digests) - inventory_urls:
+            effective_page_digests.pop(stale_url, None)
+
+        comparable_urls = {url for url in inventory_urls if url in previous_page_digests}
+        comparable_current_digests = {
+            url: effective_page_digests[url]
+            for url in sorted(comparable_urls)
+            if url in effective_page_digests
+        }
+        comparable_previous_digests = {
+            url: previous_page_digests[url]
+            for url in sorted(comparable_urls)
+            if url in previous_page_digests
+        }
+        current_digest = calculate_digest_from_page_digests(comparable_current_digests)
+        previous_comparable_digest = calculate_digest_from_page_digests(comparable_previous_digests)
+        page_changes = [
+            PageChange(url=url, change_type="updated")
+            for url in sorted(successful_page_digests)
+            if previous_page_digests.get(url) and previous_page_digests[url] != successful_page_digests[url]
+        ]
+        changed = previous_digest is not None and previous_comparable_digest != current_digest and bool(page_changes)
+
+        _write_state(
+            state_path,
+            current_digest,
+            effective_page_digests,
+            canonical_urls=inventory_urls,
+            pending_added=pending_added,
+            pending_removed=pending_removed,
+        )
 
         result = MonitorResult(
             checked_at=datetime.now(timezone.utc).isoformat(),
             changed=changed,
             current_digest=current_digest,
-            previous_digest=previous_digest,
-            page_count=len(contents),
+            previous_digest=previous_comparable_digest if previous_digest is not None else None,
+            page_count=len(inventory_contents),
             page_changes=page_changes,
+            diagnostics=diagnostics,
         )
         history = _append_history(history_path, result, limit=history_limit)
 
@@ -799,5 +1040,8 @@ if __name__ == "__main__":
         history_path=os.getenv("HISTORY_PATH", "site_data/history.json"),
         site_output_dir=os.getenv("SITE_OUTPUT_DIR", "site"),
         email_settings=EmailSettings.from_env(),
+        structure_confirmation_runs=int(
+            os.getenv("STRUCTURE_CONFIRMATION_RUNS", str(DEFAULT_STRUCTURE_CONFIRMATION_RUNS))
+        ),
     )
     print(json.dumps(result.to_dict(), indent=2))

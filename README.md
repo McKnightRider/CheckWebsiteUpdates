@@ -5,7 +5,9 @@ A small website monitor for [cdsdeterminationscommittees.org](https://www.cdsdet
 ## What it does
 
 - Crawls the CDS Determinations Committee site (including internal sub-pages)
+- Maintains a persisted canonical URL inventory for deterministic monitoring
 - Builds a content digest of fetched HTML pages
+- Separates URL discovery diagnostics from page-content change alerts
 - Runs checks every 12 hours
 - Tracks the date and time of each check plus the pages changed in that check
 - Publishes a GitHub Pages status site under `website/` with the latest check and recent history
@@ -37,6 +39,7 @@ python monitor.py
 - `NOTIFICATION_WEBHOOK_URL` (optional): webhook URL to receive change notifications.
 - `STATE_PATH` (optional, default `site_data/monitor_state.json`): file where the last site digest and per-page digests are stored.
 - `HISTORY_PATH` (optional, default `site_data/history.json`): file where recent check history is stored.
+- `STRUCTURE_CONFIRMATION_RUNS` (optional, default `2`): consecutive runs required before newly discovered or missing URLs are accepted into the canonical monitored URL inventory.
 - `SITE_OUTPUT_DIR` (optional, default `site`): base directory for the generated GitHub Pages site. The published assets are written under `site/website/`, then mirrored into the tracked repository `website/` folder by GitHub Actions.
 - `CHECK_NOW_TOKEN` (optional but recommended): required token for `POST /check-now`, sent as `X-Check-Token` header.
 - `EMAIL_TO` (optional): recipient for change emails.
