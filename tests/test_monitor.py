@@ -303,6 +303,20 @@ class MonitorTests(unittest.TestCase):
         )
         self.assertEqual(normalized_preserves_explicit_port_when_scheme_changes, "https://www.example.com:443/path")
 
+    def test_extract_links_stays_within_same_origin_port(self):
+        html = """
+        <a href="https://www.example.com/path-a">A</a>
+        <a href="https://www.example.com:8443/path-b">B</a>
+        """
+        links = monitor._extract_links(
+            html=html,
+            page_url="https://www.example.com",
+            allowed_host="www.example.com",
+            allowed_port=443,
+            canonical_scheme="https",
+        )
+        self.assertEqual(links, {"https://www.example.com/path-a"})
+
     def test_format_timestamp_uses_day_month_year_and_uk_timezone(self):
         self.assertEqual(
             monitor._format_timestamp("2026-09-25T12:48:20+00:00"),

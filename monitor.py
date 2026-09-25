@@ -136,6 +136,7 @@ def _extract_links(
     html: str,
     page_url: str,
     allowed_host: str,
+    allowed_port: int,
     canonical_scheme: str,
     canonical_port: Optional[int] = None,
 ) -> set[str]:
@@ -152,6 +153,9 @@ def _extract_links(
         if parsed.scheme not in {"http", "https"}:
             continue
         if (parsed.hostname or "").lower() != allowed_host:
+            continue
+        candidate_port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        if candidate_port != allowed_port:
             continue
         links.add(candidate)
     return links
@@ -172,6 +176,7 @@ def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[
     canonical_scheme = parsed_start_url.scheme.lower()
     canonical_port = parsed_start_url.port
     default_port_for_scheme = 443 if canonical_scheme == "https" else 80
+    allowed_port = canonical_port or default_port_for_scheme
     if canonical_port == default_port_for_scheme:
         canonical_port = None
     start_url = _normalize_url(
@@ -201,7 +206,9 @@ def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[
 
             content_by_url[current] = _normalize_text(response.text)
 
-            for link in _extract_links(response.text, current, allowed_host, canonical_scheme, canonical_port):
+            for link in _extract_links(
+                response.text, current, allowed_host, allowed_port, canonical_scheme, canonical_port
+            ):
                 if link not in visited:
                     urls.put(link)
         except requests.RequestException as exc:
@@ -326,7 +333,10 @@ def _append_history(history_path: Optional[str], result: MonitorResult, limit: i
 
 def _format_timestamp(timestamp: str) -> str:
     try:
-        parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        normalized_timestamp = timestamp.strip()
+        if normalized_timestamp.endswith(("Z", "z")):
+            normalized_timestamp = f"{normalized_timestamp[:-1]}+00:00"
+        parsed = datetime.fromisoformat(normalized_timestamp)
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=timezone.utc)
         zone_abbr_override = None
