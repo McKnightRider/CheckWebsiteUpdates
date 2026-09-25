@@ -558,7 +558,9 @@ def _generate_site_redirect_html() -> str:
     <title>Website entry</title>
   </head>
   <body>
-    <p>Open the published website: <a href="website/">Continue</a>.</p>
+    <main>
+      <p>Open the published website: <a href="website/">Open the monitor website</a>.</p>
+    </main>
   </body>
 </html>
 """
