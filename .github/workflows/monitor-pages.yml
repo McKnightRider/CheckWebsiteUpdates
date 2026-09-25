@@ -37,7 +37,9 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run monitor check and build Pages site
+        timeout-minutes: 20
         env:
+          PYTHONUNBUFFERED: "1"
           START_URL: https://www.cdsdeterminationscommittees.org
           STATE_PATH: site_data/monitor_state.json
           HISTORY_PATH: site_data/history.json
@@ -52,7 +54,7 @@ jobs:
           NOTIFICATION_WEBHOOK_URL: ${{ secrets.NOTIFICATION_WEBHOOK_URL }}
         run: |
           mkdir -p site_data site
-          python monitor.py
+          python -u monitor.py
           if [ ! -d site/website ]; then
             echo "Expected generated site/website directory was not created"
             exit 1

@@ -437,6 +437,7 @@ def crawl_site(
     attempted = set()
     content_by_url: Dict[str, str] = {}
     fetch_failures: dict[str, str] = {}
+    logger.info("Starting discovery crawl from %s (max_pages=%d)", start_url, max_pages)
 
     while not urls.empty() and len(visited) < max_pages:
         current = urls.get()
@@ -462,6 +463,14 @@ def crawl_site(
         ):
             if link not in visited and link not in attempted:
                 urls.put(link)
+        if len(attempted) == 1 or len(attempted) % 10 == 0 or urls.empty() or len(visited) >= max_pages:
+            logger.info(
+                "Discovery crawl progress: attempted=%d visited=%d queued=%d failures=%d",
+                len(attempted),
+                len(visited),
+                urls.qsize(),
+                len(fetch_failures),
+            )
 
     return CrawlResult(content_by_url=content_by_url, discovered_urls=set(content_by_url), fetch_failures=fetch_failures)
 
@@ -521,7 +530,9 @@ def fetch_inventory_pages(
     session = requests.Session()
     content_by_url: Dict[str, str] = {}
     failures: dict[str, str] = {}
-    for url in sorted(inventory_urls):
+    total_urls = len(inventory_urls)
+    logger.info("Fetching %d inventory pages", total_urls)
+    for index, url in enumerate(sorted(inventory_urls), start=1):
         html, error = _fetch_html_with_retries(
             session=session,
             url=url,
@@ -531,8 +542,16 @@ def fetch_inventory_pages(
         )
         if html is None:
             failures[url] = error or "unknown fetch error"
-            continue
-        content_by_url[url] = _normalize_text(html)
+        else:
+            content_by_url[url] = _normalize_text(html)
+        if index == 1 or index % 25 == 0 or index == total_urls:
+            logger.info(
+                "Inventory fetch progress: processed=%d/%d successes=%d failures=%d",
+                index,
+                total_urls,
+                len(content_by_url),
+                len(failures),
+            )
     return content_by_url, failures
 
 
