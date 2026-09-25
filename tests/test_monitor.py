@@ -306,7 +306,7 @@ class MonitorTests(unittest.TestCase):
             monitor._format_timestamp("2026-01-09T12:48:20+00:00"),
             "9 January 2026 at 12:48:20 PM GMT",
         )
-        with patch("monitor.ZoneInfo", side_effect=RuntimeError("missing tzdata")):
+        with patch("monitor.ZoneInfo", side_effect=monitor.ZoneInfoNotFoundError("missing tzdata")):
             self.assertEqual(
                 monitor._format_timestamp("2026-01-09T12:48:20+00:00"),
                 "9 January 2026 at 12:48:20 PM GMT",

@@ -15,7 +15,7 @@ from html import escape
 from pathlib import Path
 from typing import Any, Dict, Optional, TextIO
 from urllib.parse import urldefrag, urljoin, urlparse
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import requests
 from bs4 import BeautifulSoup
@@ -330,7 +330,7 @@ def _format_timestamp(timestamp: str) -> str:
         zone_abbr_override = None
         try:
             london_time = parsed.astimezone(ZoneInfo("Europe/London"))
-        except Exception:
+        except ZoneInfoNotFoundError:
             london_time = parsed.astimezone(timezone.utc)
             zone_abbr_override = "GMT"
         month_name = london_time.strftime("%B")
