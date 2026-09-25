@@ -39,6 +39,7 @@ python monitor.py
 - `STATE_PATH` (optional, default `site_data/monitor_state.json`): file where the last site digest and per-page digests are stored.
 - `HISTORY_PATH` (optional, default `site_data/history.json`): file where recent check history is stored.
 - `SITE_OUTPUT_DIR` (optional, default `site`): base directory for the generated GitHub Pages site. The published assets are written under `site/website/`, then mirrored into the tracked repository `website/` folder by GitHub Actions.
+- `CHECK_NOW_ENDPOINT` (optional, default `/check-now`): endpoint the generated website calls when you press Refresh. Set this to the full deployed monitor service URL if the website is hosted separately, such as on GitHub Pages.
 - `CHECK_NOW_TOKEN` (optional but recommended): required token for `POST /check-now`, sent as `X-Check-Token` header.
 - `CHECK_NOW_ALLOWED_ORIGINS` (optional, default `*`): comma-separated list of browser origins allowed to call `POST /check-now`.
 - `EMAIL_TO` (optional): recipient for change emails.
@@ -56,7 +57,9 @@ python monitor.py
 
 ## Manual refresh from the website
 
-The generated website includes a **Refresh** form that calls the monitor app's `POST /check-now` endpoint from the browser. Enter the deployed monitor service endpoint URL and the check token when prompted. If you are viewing the static GitHub Pages site, use the full monitor service URL rather than a relative path.
+The generated website includes a **Refresh** button plus a single **Refresh PIN** field. The page sends the PIN to the configured `CHECK_NOW_ENDPOINT`, which defaults to `/check-now`. If the website is hosted separately from the monitor service, set `CHECK_NOW_ENDPOINT` to the full deployed monitor service URL and use the same private value for `CHECK_NOW_TOKEN` that you enter as the PIN.
+
+For this repository's GitHub Pages workflow, set `CHECK_NOW_ENDPOINT` as a repository **Actions variable** so the generated static site points at the correct backend URL during the Pages build. Set `CHECK_NOW_TOKEN` only on the deployed monitor service as a runtime secret; do not place the token in the Pages workflow because the website should prompt you for the PIN rather than embed it.
 
 ## Default monitored pages
 
