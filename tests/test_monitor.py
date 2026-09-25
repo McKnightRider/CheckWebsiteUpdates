@@ -280,6 +280,8 @@ class MonitorTests(unittest.TestCase):
         self.assertIn('src="app.js"', index_html)
         self.assertIn('id="refresh-form"', index_html)
         self.assertIn('id="refresh-button"', index_html)
+        self.assertIn('data-check-now-endpoint="/check-now"', index_html)
+        self.assertIn("Refresh PIN", index_html)
         self.assertIn("https://example.com/a", index_html)
         self.assertIn('href="https://example.com/a"', index_html)
         self.assertEqual(history_json, history)
@@ -294,7 +296,8 @@ class MonitorTests(unittest.TestCase):
         self.assertIn(".refresh-form", stylesheet)
         self.assertIn("history-count", script)
         self.assertIn("refresh-form", script)
-        self.assertIn("check-now-endpoint", script)
+        self.assertIn("data-check-now-endpoint", script)
+        self.assertIn("Enter your refresh PIN.", script)
         self.assertEqual(asset_manifest, ["index.html", "styles.css", "app.js", "history.json", "history.csv"])
 
     def test_write_site_files_labels_first_history_item(self):
@@ -315,6 +318,19 @@ class MonitorTests(unittest.TestCase):
             index_html = (output_dir / "website" / "index.html").read_text(encoding="utf-8")
 
         self.assertIn("First Check: 1 January 2026 at 12:00:00 AM GMT", index_html)
+
+    def test_write_site_files_uses_configured_check_now_endpoint(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "site"
+            write_site_files(
+                str(output_dir),
+                "https://example.com",
+                [],
+                check_now_endpoint="https://monitor.example.com/check-now",
+            )
+            index_html = (output_dir / "website" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('data-check-now-endpoint="https://monitor.example.com/check-now"', index_html)
 
     def test_write_site_files_does_not_link_unsafe_urls(self):
         history = [

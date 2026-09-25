@@ -169,31 +169,29 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  const endpointInput = document.getElementById("refresh-endpoint");
+  const endpoint = refreshForm.getAttribute("data-check-now-endpoint") || "";
   const tokenInput = document.getElementById("refresh-token");
   const refreshButton = document.getElementById("refresh-button");
   const refreshStatus = document.getElementById("refresh-status");
-  const storedEndpoint = window.localStorage.getItem("check-now-endpoint");
-  if (endpointInput && storedEndpoint) {
-    endpointInput.value = storedEndpoint;
-  }
 
   refreshForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!endpointInput || !tokenInput || !refreshButton || !refreshStatus) {
+    if (!tokenInput || !refreshButton || !refreshStatus) {
       return;
     }
 
-    const endpoint = endpointInput.value.trim();
     const token = tokenInput.value;
-    if (!endpoint || !token) {
-      refreshStatus.textContent = "Enter the check endpoint URL and token.";
+    if (!endpoint) {
+      refreshStatus.textContent = "Refresh is not configured yet.";
+      return;
+    }
+    if (!token) {
+      refreshStatus.textContent = "Enter your refresh PIN.";
       return;
     }
 
     refreshStatus.textContent = "Refreshing…";
     refreshButton.disabled = true;
-    window.localStorage.setItem("check-now-endpoint", endpoint);
 
     try {
       const response = await fetch(endpoint, {
@@ -838,6 +836,7 @@ def generate_site_html(
     start_url: str,
     monitored_urls: Optional[list[str]],
     history: list[dict[str, Any]],
+    check_now_endpoint: str = "/check-now",
 ) -> str:
     latest = history[-1] if history else None
     title = "DC Website Update Monitor"
@@ -897,13 +896,11 @@ def generate_site_html(
       </section>
       <section class=\"card\">
         <h2>Manual refresh</h2>
-        <form id=\"refresh-form\" class=\"refresh-form\">
-          <label for=\"refresh-endpoint\">Check endpoint URL</label>
-          <input id=\"refresh-endpoint\" name=\"refresh-endpoint\" type=\"text\" inputmode=\"url\" value=\"/check-now\" required>
-          <label for=\"refresh-token\">Check token</label>
+        <form id=\"refresh-form\" class=\"refresh-form\" data-check-now-endpoint=\"{escape(check_now_endpoint)}\">
+          <label for=\"refresh-token\">Refresh PIN</label>
           <input id=\"refresh-token\" name=\"refresh-token\" type=\"password\" autocomplete=\"off\" required>
           <button id=\"refresh-button\" type=\"submit\">Refresh</button>
-          <p class=\"refresh-help\">Use the monitor app&apos;s <code>/check-now</code> endpoint. If this site is hosted on GitHub Pages, enter the full URL of the deployed monitor service endpoint.</p>
+          <p class=\"refresh-help\">Press Refresh to run a new check. Enter the private PIN configured on the monitor service.</p>
           <p id=\"refresh-status\" class=\"refresh-status\" aria-live=\"polite\"></p>
         </form>
       </section>
@@ -949,6 +946,7 @@ def write_site_files(
     start_url: str,
     history: list[dict[str, Any]],
     monitored_urls: Optional[list[str]] = None,
+    check_now_endpoint: str = "/check-now",
 ) -> None:
     if not site_output_dir:
         return
@@ -967,7 +965,12 @@ def write_site_files(
             shutil.rmtree(generated_path)
     (output_dir / "index.html").write_text(_generate_site_redirect_html(), encoding="utf-8")
     (website_dir / "index.html").write_text(
-        generate_site_html(start_url=start_url, monitored_urls=monitored_urls, history=history),
+        generate_site_html(
+            start_url=start_url,
+            monitored_urls=monitored_urls,
+            history=history,
+            check_now_endpoint=check_now_endpoint,
+        ),
         encoding="utf-8",
     )
     (website_dir / "styles.css").write_text(WEBSITE_STYLESHEET, encoding="utf-8")
@@ -1049,6 +1052,7 @@ def run_monitor_check(
     email_settings: Optional[EmailSettings] = None,
     history_limit: int = 100,
     structure_confirmation_runs: int = DEFAULT_STRUCTURE_CONFIRMATION_RUNS,
+    check_now_endpoint: str = "/check-now",
 ) -> MonitorResult:
     with _with_state_lock(state_path):
         previous_state = _read_state(state_path) or {}
@@ -1122,6 +1126,7 @@ def run_monitor_check(
         start_url=start_url,
         monitored_urls=configured_monitored_urls,
         history=history,
+        check_now_endpoint=check_now_endpoint,
     )
 
     if changed:
@@ -1143,6 +1148,7 @@ class MonitorService:
         history_path: Optional[str] = None,
         site_output_dir: Optional[str] = None,
         email_settings: Optional[EmailSettings] = None,
+        check_now_endpoint: str = "/check-now",
     ):
         self.start_url = start_url
         self.state_path = state_path
@@ -1152,6 +1158,7 @@ class MonitorService:
         self.history_path = history_path
         self.site_output_dir = site_output_dir
         self.email_settings = email_settings
+        self.check_now_endpoint = check_now_endpoint
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
         self._check_lock = threading.Lock()
@@ -1166,9 +1173,10 @@ class MonitorService:
                 webhook_url=self.webhook_url,
                 history_path=self.history_path,
                 monitored_urls=self.monitored_urls,
-                site_output_dir=self.site_output_dir,
-                email_settings=self.email_settings,
-            )
+                    site_output_dir=self.site_output_dir,
+                    email_settings=self.email_settings,
+                    check_now_endpoint=self.check_now_endpoint,
+                )
             return self.last_result
 
     def _loop(self) -> None:
@@ -1224,6 +1232,7 @@ if __name__ == "__main__":
         history_path=os.getenv("HISTORY_PATH", "site_data/history.json"),
         site_output_dir=os.getenv("SITE_OUTPUT_DIR", "site"),
         email_settings=EmailSettings.from_env(),
+        check_now_endpoint=os.getenv("CHECK_NOW_ENDPOINT", "/check-now"),
         structure_confirmation_runs=int(
             os.getenv("STRUCTURE_CONFIRMATION_RUNS", str(DEFAULT_STRUCTURE_CONFIRMATION_RUNS))
         ),
