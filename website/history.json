@@ -796,5 +796,307 @@
         "change_type": "added"
       }
     ]
+  },
+  {
+    "checked_at": "2026-09-25T15:55:34.557049+00:00",
+    "changed": true,
+    "current_digest": "e85ac93f76b3a86f36d1ae853eb9ebbf724df100b4042271c368ac69ce33f49e",
+    "previous_digest": "139d03a90853da8cc36a4d07cebcdc4deaeda30f51a33c71ca18049d7f2a4881",
+    "page_count": 68,
+    "page_changes": [
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/aleris-international-inc-lcds-auction",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/avaya-inc-lcds-credit-event",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/caesars-entertainment-operating-company-inc-lcds-credit-event",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/charter-communications",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/eastman-kodak-company-lcds-credit-event",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/eircom",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/financier-gaillon-7",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/general-motors-corporation",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/georgia-gulf-corporation",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/hawaiian-telcom-communications-lcds-auction",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/hawker-beechcraft-acquisition-co-llc-lcds-credit-event",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/hli-operating-company-inc-credit-event",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/idearc-lcds-auction",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/iheart-communications-inc-lcds-credit-event",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/lear-corporation",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/lyondell-chemical-company-lcds-auction",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/masonite-international-corporation-lcds-auction",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/mccarthy-stone",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/metro-goldwyn-mayer-inc",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/momentive-performance-materials-inc-lcds-credit-event",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/movie-gallery-lcds-auction",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/newpage-corporation-credit-event",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/panrico",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/seat",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/smurfit-stone-container-enterprises-inc-lcds-auction",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/tribune-company-lcds-auction",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/truvo-usa",
+        "change_type": "removed"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/visteon-corporation",
+        "change_type": "removed"
+      }
+    ]
+  },
+  {
+    "checked_at": "2026-09-25T16:07:39.989451+00:00",
+    "changed": true,
+    "current_digest": "eadeb69642b4fad6cb44b34eb23ea1d9c151f8d281c10d520698280900eb60bd",
+    "previous_digest": "e85ac93f76b3a86f36d1ae853eb9ebbf724df100b4042271c368ac69ce33f49e",
+    "page_count": 111,
+    "page_changes": [
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/category/credit-event",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/category/successor",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/cds/braskem-s-a",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/cds/china-aoyuan-group-limited",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/cds/country-garden-holdings-company-limited",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/cds/logan-group-company-limited",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/cds/nationstar-mortgage-holdings-inc",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/cds/noble-group-limited-4",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/cds/posco",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/cds/powerlong-real-estate-holdings-limited",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/cds/shimao-group-holdings-limited",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/cds/sino-ocean-group-holding-limited",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/cds/sunac-china-holdings-limited",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/cds/yuzhou-group-holdings-company-limited",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/committee/asia-ex-japan/page/2",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/aleris-international-inc-lcds-auction",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/avaya-inc-lcds-credit-event",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/caesars-entertainment-operating-company-inc-lcds-credit-event",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/charter-communications",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/eastman-kodak-company-lcds-credit-event",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/eircom",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/financier-gaillon-7",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/general-motors-corporation",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/georgia-gulf-corporation",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/hawaiian-telcom-communications-lcds-auction",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/hawker-beechcraft-acquisition-co-llc-lcds-credit-event",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/hli-operating-company-inc-credit-event",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/idearc-lcds-auction",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/iheart-communications-inc-lcds-credit-event",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/lear-corporation",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/lyondell-chemical-company-lcds-auction",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/masonite-international-corporation-lcds-auction",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/mccarthy-stone",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/metro-goldwyn-mayer-inc",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/momentive-performance-materials-inc-lcds-credit-event",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/movie-gallery-lcds-auction",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/newpage-corporation-credit-event",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/panrico",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/seat",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/smurfit-stone-container-enterprises-inc-lcds-auction",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/tribune-company-lcds-auction",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/truvo-usa",
+        "change_type": "added"
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/lcds/visteon-corporation",
+        "change_type": "added"
+      }
+    ]
   }
 ]
