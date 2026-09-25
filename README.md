@@ -59,6 +59,8 @@ python monitor.py
 
 The generated website includes a **Refresh** button plus a single **Refresh PIN** field. The page sends the PIN to the configured `CHECK_NOW_ENDPOINT`, which defaults to `/check-now`. If the website is hosted separately from the monitor service, set `CHECK_NOW_ENDPOINT` to the full deployed monitor service URL and use the same private value for `CHECK_NOW_TOKEN` that you enter as the PIN.
 
+For this repository's GitHub Pages workflow, set `CHECK_NOW_ENDPOINT` as a repository **Actions variable** so the generated static site points at the correct backend URL during the Pages build. Set `CHECK_NOW_TOKEN` only on the deployed monitor service as a runtime secret; do not place the token in the Pages workflow because the website should prompt you for the PIN rather than embed it.
+
 ## Default monitored pages
 
 By default, checks and notifications are limited to these pages:

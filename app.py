@@ -22,7 +22,7 @@ HISTORY_PATH = os.getenv("HISTORY_PATH", "site_data/history.json")
 SITE_OUTPUT_DIR = os.getenv("SITE_OUTPUT_DIR", "site")
 WEBHOOK_URL = os.getenv("NOTIFICATION_WEBHOOK_URL", "")
 CHECK_NOW_TOKEN = os.getenv("CHECK_NOW_TOKEN", "")
-CHECK_NOW_ENDPOINT = os.getenv("CHECK_NOW_ENDPOINT", "/check-now")
+CHECK_NOW_ENDPOINT = os.getenv("CHECK_NOW_ENDPOINT") or "/check-now"
 CHECK_NOW_ALLOWED_ORIGINS = tuple(
     origin.strip()
     for origin in os.getenv("CHECK_NOW_ALLOWED_ORIGINS", "*").split(",")

@@ -1232,7 +1232,7 @@ if __name__ == "__main__":
         history_path=os.getenv("HISTORY_PATH", "site_data/history.json"),
         site_output_dir=os.getenv("SITE_OUTPUT_DIR", "site"),
         email_settings=EmailSettings.from_env(),
-        check_now_endpoint=os.getenv("CHECK_NOW_ENDPOINT", "/check-now"),
+        check_now_endpoint=os.getenv("CHECK_NOW_ENDPOINT") or "/check-now",
         structure_confirmation_runs=int(
             os.getenv("STRUCTURE_CONFIRMATION_RUNS", str(DEFAULT_STRUCTURE_CONFIRMATION_RUNS))
         ),
