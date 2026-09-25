@@ -278,6 +278,8 @@ class MonitorTests(unittest.TestCase):
         self.assertIn("Latest check", index_html)
         self.assertIn('href="history.csv"', index_html)
         self.assertIn('src="app.js"', index_html)
+        self.assertIn('id="refresh-form"', index_html)
+        self.assertIn('id="refresh-button"', index_html)
         self.assertIn("https://example.com/a", index_html)
         self.assertIn('href="https://example.com/a"', index_html)
         self.assertEqual(history_json, history)
@@ -289,7 +291,10 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(history_csv[1]["checked_at_display"], "2 January 2026 at 12:00:00 AM GMT")
         self.assertEqual(history_csv[1]["changed"], "false")
         self.assertIn(".resource-list", stylesheet)
+        self.assertIn(".refresh-form", stylesheet)
         self.assertIn("history-count", script)
+        self.assertIn("refresh-form", script)
+        self.assertIn("check-now-endpoint", script)
         self.assertEqual(asset_manifest, ["index.html", "styles.css", "app.js", "history.json", "history.csv"])
 
     def test_write_site_files_does_not_link_unsafe_urls(self):
