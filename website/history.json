@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "checked_at": "2026-09-25T17:58:23.382328+00:00",
+    "changed": false,
+    "current_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "previous_digest": null,
+    "page_count": 5,
+    "page_changes": [],
+    "diagnostics": [
+      "Monitoring configured pages only (5 URLs)."
+    ]
+  }
+]
