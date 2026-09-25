@@ -53,17 +53,20 @@ jobs:
         run: |
           mkdir -p site_data site
           python monitor.py
+          rm -rf website
+          mkdir -p website
+          cp -R site/website/. website/
 
-      - name: Commit updated monitor history
+      - name: Commit updated monitor history and website assets
         run: |
-          if [ -z "$(git status --porcelain -- site_data)" ]; then
-            echo "No persisted monitor data changes to commit"
+          if [ -z "$(git status --porcelain -- site_data website)" ]; then
+            echo "No persisted monitor data or website changes to commit"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site_data
-          git commit -m "Update monitor history [skip ci]"
+          git add site_data website
+          git commit -m "Update monitor history and website [skip ci]"
           git push
 
       - name: Configure Pages
