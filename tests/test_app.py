@@ -9,21 +9,17 @@ class AppTests(unittest.TestCase):
     def setUp(self):
         self.client = app_module.app.test_client()
 
-    def test_check_now_options_returns_cors_headers(self):
+    def test_index_returns_running_status_without_last_result(self):
         with patch.object(app_module, "ensure_service_started", return_value=None), patch.object(
-            app_module, "CHECK_NOW_ALLOWED_ORIGINS", ("https://pages.example.com",)
+            app_module.service, "last_result", None
         ):
-            response = self.client.open(
-                "/check-now",
-                method="OPTIONS",
-                headers={"Origin": "https://pages.example.com"},
-            )
+            response = self.client.get("/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), "https://pages.example.com")
-        self.assertEqual(response.headers.get("Access-Control-Allow-Headers"), "X-Check-Token")
+        self.assertEqual(response.get_json()["status"], "running")
+        self.assertIsNone(response.get_json()["last_check"])
 
-    def test_check_now_runs_monitor_and_returns_cors_headers(self):
+    def test_index_returns_last_result(self):
         result = MonitorResult(
             checked_at="2026-01-01T00:00:00+00:00",
             changed=False,
@@ -33,38 +29,15 @@ class AppTests(unittest.TestCase):
         )
 
         with patch.object(app_module, "ensure_service_started", return_value=None), patch.object(
-            app_module, "CHECK_NOW_ALLOWED_ORIGINS", ("https://pages.example.com",)
-        ), patch.object(app_module, "CHECK_NOW_TOKEN", "secret"), patch.object(
-            app_module.service, "perform_check", return_value=result
-        ) as perform_check_mock:
-            response = self.client.post(
-                "/check-now",
-                headers={
-                    "Origin": "https://pages.example.com",
-                    "X-Check-Token": "secret",
-                },
-            )
+            app_module.service, "last_result", result
+        ):
+            response = self.client.get("/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json()["result"]["checked_at"], result.checked_at)
-        self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), "https://pages.example.com")
-        perform_check_mock.assert_called_once()
+        self.assertEqual(response.get_json()["last_check"]["checked_at"], result.checked_at)
 
-    def test_check_now_rejects_invalid_token(self):
-        with patch.object(app_module, "ensure_service_started", return_value=None), patch.object(
-            app_module, "CHECK_NOW_ALLOWED_ORIGINS", ("*",)
-        ), patch.object(app_module, "CHECK_NOW_TOKEN", "secret"), patch.object(
-            app_module.service, "perform_check"
-        ) as perform_check_mock:
-            response = self.client.post(
-                "/check-now",
-                headers={
-                    "Origin": "https://pages.example.com",
-                    "X-Check-Token": "wrong",
-                },
-            )
+    def test_check_now_route_is_not_available(self):
+        with patch.object(app_module, "ensure_service_started", return_value=None):
+            response = self.client.post("/check-now")
 
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.get_json()["error"], "Forbidden")
-        self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), "*")
-        perform_check_mock.assert_not_called()
+        self.assertEqual(response.status_code, 404)

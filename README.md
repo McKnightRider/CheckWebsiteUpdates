@@ -39,9 +39,6 @@ python monitor.py
 - `STATE_PATH` (optional, default `site_data/monitor_state.json`): file where the last site digest and per-page digests are stored.
 - `HISTORY_PATH` (optional, default `site_data/history.json`): file where recent check history is stored.
 - `SITE_OUTPUT_DIR` (optional, default `site`): base directory for the generated GitHub Pages site. The published assets are written under `site/website/`, then mirrored into the tracked repository `website/` folder by GitHub Actions.
-- `CHECK_NOW_ENDPOINT` (optional, default `/check-now`): endpoint the generated website calls when you press Refresh. Set this to the full deployed monitor service URL if the website is hosted separately, such as on GitHub Pages.
-- `CHECK_NOW_TOKEN` (optional but recommended): required token for `POST /check-now`, sent as `X-Check-Token` header.
-- `CHECK_NOW_ALLOWED_ORIGINS` (optional, default `*`): comma-separated list of browser origins allowed to call `POST /check-now`.
 - `EMAIL_TO` (optional): recipient for change emails.
 - `EMAIL_FROM` (required for email sending): sender address used for change emails.
 - `EMAIL_SMTP_HOST` (required for email sending): SMTP server hostname.
@@ -53,13 +50,14 @@ python monitor.py
 ## Endpoints
 
 - `GET /` - monitor status and last check result
-- `POST /check-now` - trigger an immediate check (requires `X-Check-Token` header matching `CHECK_NOW_TOKEN`)
 
 ## Manual refresh from the website
 
-The generated website includes a **Refresh** button plus a single **Refresh PIN** field. The page sends the PIN to the configured `CHECK_NOW_ENDPOINT`, which defaults to `/check-now`. If the website is hosted separately from the monitor service, set `CHECK_NOW_ENDPOINT` to the full deployed monitor service URL and use the same private value for `CHECK_NOW_TOKEN` that you enter as the PIN.
+The generated website includes a **Manual refresh** section that links directly to this repository's GitHub Actions workflow. To run an immediate check, open that workflow and click **Run workflow**.
 
-For this repository's GitHub Pages workflow, set `CHECK_NOW_ENDPOINT` as a repository **Actions variable** so the generated static site points at the correct backend URL during the Pages build. Set `CHECK_NOW_TOKEN` only on the deployed monitor service as a runtime secret; do not place the token in the Pages workflow because the website should prompt you for the PIN rather than embed it.
+This GitHub-only setup uses GitHub authentication as the security boundary. Only users with permission to run workflows in the repository can trigger a manual refresh. No public PIN, backend secret, or always-on `/check-now` service is required.
+
+When the workflow finishes, it updates `site_data/`, regenerates `website/`, and deploys the latest Pages site. Reload the published site after the run completes to see the newest output.
 
 ## Default monitored pages
 
