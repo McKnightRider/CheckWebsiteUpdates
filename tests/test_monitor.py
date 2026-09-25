@@ -257,6 +257,7 @@ class MonitorTests(unittest.TestCase):
             history_csv = list(csv.DictReader((website_dir / "history.csv").read_text(encoding="utf-8").splitlines()))
             stylesheet = (website_dir / "styles.css").read_text(encoding="utf-8")
             script = (website_dir / "app.js").read_text(encoding="utf-8")
+            asset_manifest = json.loads((website_dir / "asset-manifest.json").read_text(encoding="utf-8"))
 
         self.assertIn('href="website/"', redirect_html)
         self.assertNotIn("http-equiv", redirect_html)
@@ -275,6 +276,7 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(history_csv[1]["changed"], "false")
         self.assertIn(".resource-list", stylesheet)
         self.assertIn("history-count", script)
+        self.assertEqual(asset_manifest, ["index.html", "styles.css", "app.js", "history.json", "history.csv"])
 
     def test_write_site_files_does_not_link_unsafe_urls(self):
         history = [

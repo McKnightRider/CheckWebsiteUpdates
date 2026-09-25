@@ -53,17 +53,76 @@ jobs:
         run: |
           mkdir -p site_data site
           python monitor.py
+          if [ ! -d site/website ]; then
+            echo "Expected generated site/website directory was not created"
+            exit 1
+          fi
+          mkdir -p website
+          python - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
 
-      - name: Commit updated monitor history
+          manifest_name = "asset-manifest.json"
+          source_dir = Path("site/website")
+          target_dir = Path("website")
+          source_manifest = source_dir / manifest_name
+          if not source_manifest.is_file():
+              raise SystemExit(f"Expected generated manifest {source_manifest} was not created")
+
+          def validate_relative_path(raw_path: str) -> str:
+              relative_path = Path(raw_path)
+              if relative_path.is_absolute():
+                  raise SystemExit(f"Absolute manifest path is not allowed: {raw_path}")
+              if not relative_path.parts or any(part in {"..", ""} for part in relative_path.parts):
+                  raise SystemExit(f"Unsafe manifest path is not allowed: {raw_path}")
+              normalized_path = Path(*relative_path.parts)
+              return normalized_path.as_posix()
+
+          current_files = {
+              validate_relative_path(raw_path)
+              for raw_path in json.loads(source_manifest.read_text(encoding="utf-8"))
+          }
+          previous_manifest = target_dir / manifest_name
+          previous_files = set()
+          if previous_manifest.is_file():
+              previous_files = {
+                  validate_relative_path(raw_path)
+                  for raw_path in json.loads(previous_manifest.read_text(encoding="utf-8"))
+              }
+          source_file_map = {}
+          for relative_path in sorted(current_files | {manifest_name}):
+              source_path = source_dir / relative_path
+              if not source_path.is_file():
+                  raise SystemExit(f"Expected generated file {source_path} was not created")
+              source_file_map[relative_path] = source_path
+
+          for relative_path in sorted(previous_files - current_files):
+              candidate = target_dir / relative_path
+              if candidate.is_file() or candidate.is_symlink():
+                  candidate.unlink()
+                  parent = candidate.parent
+                  while parent != target_dir and parent.exists() and not any(parent.iterdir()):
+                      parent.rmdir()
+                      parent = parent.parent
+
+          for relative_path in sorted(source_file_map):
+              source_path = source_file_map[relative_path]
+              destination_path = target_dir / relative_path
+              destination_path.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(source_path, destination_path)
+          PY
+
+      - name: Commit updated monitor history and website assets
         run: |
-          if [ -z "$(git status --porcelain -- site_data)" ]; then
-            echo "No persisted monitor data changes to commit"
+          if [ -z "$(git status --porcelain -- site_data website)" ]; then
+            echo "No persisted monitor data or website changes to commit"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site_data
-          git commit -m "Update monitor history [skip ci]"
+          git add site_data website
+          git commit -m "Update monitor history and website [skip ci]"
           git push
 
       - name: Configure Pages
