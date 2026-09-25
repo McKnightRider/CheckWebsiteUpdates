@@ -15,6 +15,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from email.message import EmailMessage
+from functools import lru_cache
 from html import escape
 from pathlib import Path
 from typing import Any, Dict, Optional, TextIO
@@ -49,6 +50,7 @@ GENERATED_WEBSITE_FILES = (
     "history.csv",
     GENERATED_WEBSITE_MANIFEST,
 )
+MONITOR_WORKFLOW_FILENAME = "monitor-pages.yml"
 TRACKING_QUERY_PREFIXES = ("utm_",)
 TRACKING_QUERY_KEYS = {"gclid", "fbclid", "mc_cid", "mc_eid"}
 NOISY_PATH_PREFIXES = ("/category/", "/tag/", "/author/")
@@ -112,36 +114,13 @@ ul {
   border: 1px solid rgba(147, 197, 253, 0.35);
 }
 
-.refresh-form {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.refresh-form label {
-  font-weight: bold;
-}
-
-.refresh-form input,
-.refresh-form button {
-  width: 100%;
-  box-sizing: border-box;
+.refresh-link {
+  display: inline-block;
   padding: 0.75rem 0.9rem;
   border-radius: 0.75rem;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: rgba(15, 23, 42, 0.9);
-  color: inherit;
-}
-
-.refresh-form button {
-  width: auto;
-  cursor: pointer;
+  text-decoration: none;
   background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(147, 197, 253, 0.45);
-}
-
-.refresh-form button[disabled] {
-  cursor: wait;
-  opacity: 0.7;
+  border: 1px solid rgba(147, 197, 253, 0.45);
 }
 
 .refresh-help,
@@ -164,55 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  const refreshForm = document.getElementById("refresh-form");
-  if (!refreshForm) {
-    return;
-  }
-
-  const endpoint = refreshForm.getAttribute("data-check-now-endpoint") || "";
-  const tokenInput = document.getElementById("refresh-token");
-  const refreshButton = document.getElementById("refresh-button");
-  const refreshStatus = document.getElementById("refresh-status");
-
-  refreshForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (!tokenInput || !refreshButton || !refreshStatus) {
-      return;
-    }
-
-    const token = tokenInput.value;
-    if (!endpoint) {
-      refreshStatus.textContent = "Refresh is not configured yet.";
-      return;
-    }
-    if (!token) {
-      refreshStatus.textContent = "Enter your refresh PIN.";
-      return;
-    }
-
-    refreshStatus.textContent = "Refreshing…";
-    refreshButton.disabled = true;
-
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "X-Check-Token": token
-        }
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload.error || "Refresh failed.");
-      }
-
-      const checkedAt = payload?.result?.checked_at || "just now";
-      refreshStatus.textContent = `Refresh complete at ${checkedAt}. Reload the page to see the latest site output.`;
-    } catch (error) {
-      refreshStatus.textContent = error instanceof Error ? error.message : "Refresh failed.";
-    } finally {
-      refreshButton.disabled = false;
-    }
-  });
 });
 """
 
@@ -832,11 +762,82 @@ def _render_history_heading(checked_at: str, *, is_first_check: bool = False) ->
 
 
 
+def _extract_github_repository(remote_url: str) -> Optional[str]:
+    normalized_remote = remote_url.strip().rstrip("/")
+    if not normalized_remote:
+        return None
+    for prefix in ("https://github.com/", "git@github.com:"):
+        if normalized_remote.startswith(prefix):
+            repository = normalized_remote[len(prefix):]
+            if repository.endswith(".git"):
+                repository = repository[:-4]
+            owner, separator, repo = repository.partition("/")
+            if separator and owner and repo and "/" not in repo:
+                return f"{owner}/{repo}"
+    return None
+
+
+
+def _normalize_github_repository(repository: str) -> Optional[str]:
+    owner, separator, repo = repository.strip().strip("/").partition("/")
+    if separator and owner and repo and "/" not in repo:
+        return f"{owner}/{repo}"
+    return None
+
+
+
+def _iter_git_config_paths():
+    search_roots = [Path.cwd(), Path(__file__).resolve().parent]
+    visited: set[Path] = set()
+    for root in search_roots:
+        for candidate_dir in (root, *root.parents):
+            if candidate_dir in visited:
+                continue
+            visited.add(candidate_dir)
+            git_config_path = candidate_dir / ".git" / "config"
+            if git_config_path.is_file():
+                yield git_config_path
+
+
+
+@lru_cache(maxsize=1)
+def get_github_repository() -> Optional[str]:
+    configured_repository = os.getenv("GITHUB_REPOSITORY", "").strip()
+    normalized_repository = _normalize_github_repository(configured_repository)
+    if normalized_repository:
+        return normalized_repository
+
+    for git_config_path in _iter_git_config_paths():
+        current_section = ""
+        for raw_line in git_config_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if line.startswith("[") and line.endswith("]"):
+                current_section = line
+                continue
+            if current_section != '[remote "origin"]' or not line.startswith("url ="):
+                continue
+            extracted_repository = _extract_github_repository(line.partition("=")[2])
+            if extracted_repository:
+                return extracted_repository
+            break
+    return None
+
+
+
+def get_manual_refresh_workflow_url(repository: Optional[str]) -> Optional[str]:
+    normalized_repository = _normalize_github_repository(repository or "")
+    if not normalized_repository:
+        return None
+    owner, _, repo = normalized_repository.partition("/")
+    return f"https://github.com/{owner}/{repo}/actions/workflows/{MONITOR_WORKFLOW_FILENAME}"
+
+
+
 def generate_site_html(
     start_url: str,
     monitored_urls: Optional[list[str]],
     history: list[dict[str, Any]],
-    check_now_endpoint: str = "/check-now",
+    manual_refresh_url: Optional[str] = None,
 ) -> str:
     latest = history[-1] if history else None
     title = "DC Website Update Monitor"
@@ -861,6 +862,18 @@ def generate_site_html(
           <h2>Latest check</h2>
           <p>No checks have run yet.</p>
         </section>
+        """
+
+    if manual_refresh_url:
+        manual_refresh_markup = f"""
+        <p class=\"refresh-help\">To run an immediate check, open the GitHub Actions workflow and click <strong>Run workflow</strong>. You must be signed in with permission to run workflows for this repository.</p>
+        <p><a id=\"refresh-button\" class=\"refresh-link\" href=\"{escape(manual_refresh_url)}\" target=\"_blank\" rel=\"noopener noreferrer\">Open Run workflow</a></p>
+        <p id=\"refresh-status\" class=\"refresh-status\" aria-live=\"polite\">After the workflow finishes, reload this page to see the latest site output.</p>
+        """
+    else:
+        manual_refresh_markup = """
+        <p class=\"refresh-help\">Manual refresh is available from this repository's GitHub Actions workflow after the site is built in GitHub.</p>
+        <p id=\"refresh-status\" class=\"refresh-status\" aria-live=\"polite\">Open the repository Actions tab and run the monitor workflow to refresh the site.</p>
         """
 
     history_markup = "".join(
@@ -896,13 +909,7 @@ def generate_site_html(
       </section>
       <section class=\"card\">
         <h2>Manual refresh</h2>
-        <form id=\"refresh-form\" class=\"refresh-form\" data-check-now-endpoint=\"{escape(check_now_endpoint)}\">
-          <label for=\"refresh-token\">Refresh PIN</label>
-          <input id=\"refresh-token\" name=\"refresh-token\" type=\"password\" autocomplete=\"off\" required>
-          <button id=\"refresh-button\" type=\"submit\">Refresh</button>
-          <p class=\"refresh-help\">Press Refresh to run a new check. Enter the private PIN configured on the monitor service.</p>
-          <p id=\"refresh-status\" class=\"refresh-status\" aria-live=\"polite\"></p>
-        </form>
+        {manual_refresh_markup}
       </section>
       {latest_summary}
       <section class=\"card\">
@@ -946,7 +953,7 @@ def write_site_files(
     start_url: str,
     history: list[dict[str, Any]],
     monitored_urls: Optional[list[str]] = None,
-    check_now_endpoint: str = "/check-now",
+    manual_refresh_url: Optional[str] = None,
 ) -> None:
     if not site_output_dir:
         return
@@ -969,7 +976,7 @@ def write_site_files(
             start_url=start_url,
             monitored_urls=monitored_urls,
             history=history,
-            check_now_endpoint=check_now_endpoint,
+            manual_refresh_url=manual_refresh_url,
         ),
         encoding="utf-8",
     )
@@ -1052,7 +1059,6 @@ def run_monitor_check(
     email_settings: Optional[EmailSettings] = None,
     history_limit: int = 100,
     structure_confirmation_runs: int = DEFAULT_STRUCTURE_CONFIRMATION_RUNS,
-    check_now_endpoint: str = "/check-now",
 ) -> MonitorResult:
     with _with_state_lock(state_path):
         previous_state = _read_state(state_path) or {}
@@ -1126,7 +1132,7 @@ def run_monitor_check(
         start_url=start_url,
         monitored_urls=configured_monitored_urls,
         history=history,
-        check_now_endpoint=check_now_endpoint,
+        manual_refresh_url=get_manual_refresh_workflow_url(get_github_repository()),
     )
 
     if changed:
@@ -1148,7 +1154,6 @@ class MonitorService:
         history_path: Optional[str] = None,
         site_output_dir: Optional[str] = None,
         email_settings: Optional[EmailSettings] = None,
-        check_now_endpoint: str = "/check-now",
     ):
         self.start_url = start_url
         self.state_path = state_path
@@ -1158,7 +1163,6 @@ class MonitorService:
         self.history_path = history_path
         self.site_output_dir = site_output_dir
         self.email_settings = email_settings
-        self.check_now_endpoint = check_now_endpoint
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
         self._check_lock = threading.Lock()
@@ -1173,10 +1177,9 @@ class MonitorService:
                 webhook_url=self.webhook_url,
                 history_path=self.history_path,
                 monitored_urls=self.monitored_urls,
-                    site_output_dir=self.site_output_dir,
-                    email_settings=self.email_settings,
-                    check_now_endpoint=self.check_now_endpoint,
-                )
+                site_output_dir=self.site_output_dir,
+                email_settings=self.email_settings,
+            )
             return self.last_result
 
     def _loop(self) -> None:
@@ -1232,7 +1235,6 @@ if __name__ == "__main__":
         history_path=os.getenv("HISTORY_PATH", "site_data/history.json"),
         site_output_dir=os.getenv("SITE_OUTPUT_DIR", "site"),
         email_settings=EmailSettings.from_env(),
-        check_now_endpoint=os.getenv("CHECK_NOW_ENDPOINT") or "/check-now",
         structure_confirmation_runs=int(
             os.getenv("STRUCTURE_CONFIRMATION_RUNS", str(DEFAULT_STRUCTURE_CONFIRMATION_RUNS))
         ),

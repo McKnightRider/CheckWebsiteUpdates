@@ -44,7 +44,6 @@ jobs:
           STATE_PATH: site_data/monitor_state.json
           HISTORY_PATH: site_data/history.json
           SITE_OUTPUT_DIR: site
-          CHECK_NOW_ENDPOINT: ${{ vars.CHECK_NOW_ENDPOINT }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           EMAIL_SMTP_HOST: ${{ secrets.EMAIL_SMTP_HOST }}

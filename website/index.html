@@ -19,13 +19,11 @@
       </section>
       <section class="card">
         <h2>Manual refresh</h2>
-        <form id="refresh-form" class="refresh-form" data-check-now-endpoint="/check-now">
-          <label for="refresh-token">Refresh PIN</label>
-          <input id="refresh-token" name="refresh-token" type="password" autocomplete="off" required>
-          <button id="refresh-button" type="submit">Refresh</button>
-          <p class="refresh-help">Press Refresh to run a new check. Enter the private PIN configured on the monitor service.</p>
-          <p id="refresh-status" class="refresh-status" aria-live="polite"></p>
-        </form>
+        
+        <p class="refresh-help">To run an immediate check, open the GitHub Actions workflow and click <strong>Run workflow</strong>. You must be signed in with permission to run workflows for this repository.</p>
+        <p><a id="refresh-button" class="refresh-link" href="https://github.com/McKnightRider/CheckWebsiteUpdates/actions/workflows/monitor-pages.yml" target="_blank" rel="noopener noreferrer">Open Run workflow</a></p>
+        <p id="refresh-status" class="refresh-status" aria-live="polite">After the workflow finishes, reload this page to see the latest site output.</p>
+        
       </section>
       
         <section class="card">

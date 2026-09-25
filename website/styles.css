@@ -53,36 +53,13 @@ ul {
   border: 1px solid rgba(147, 197, 253, 0.35);
 }
 
-.refresh-form {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.refresh-form label {
-  font-weight: bold;
-}
-
-.refresh-form input,
-.refresh-form button {
-  width: 100%;
-  box-sizing: border-box;
+.refresh-link {
+  display: inline-block;
   padding: 0.75rem 0.9rem;
   border-radius: 0.75rem;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: rgba(15, 23, 42, 0.9);
-  color: inherit;
-}
-
-.refresh-form button {
-  width: auto;
-  cursor: pointer;
+  text-decoration: none;
   background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(147, 197, 253, 0.45);
-}
-
-.refresh-form button[disabled] {
-  cursor: wait;
-  opacity: 0.7;
+  border: 1px solid rgba(147, 197, 253, 0.45);
 }
 
 .refresh-help,
