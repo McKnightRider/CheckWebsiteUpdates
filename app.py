@@ -51,6 +51,9 @@ def check_now():
     result = service.perform_check()
     return jsonify({"ok": True, "result": result.__dict__})
 
+
+service.start()
+
+
 if __name__ == "__main__":
-    service.start()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")))

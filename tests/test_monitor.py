@@ -80,6 +80,18 @@ class MonitorTests(unittest.TestCase):
         with self.assertRaises(requests.HTTPError):
             send_notification("https://hooks.example.com", result)
 
+    @patch("monitor.requests.post")
+    def test_send_notification_skips_when_webhook_missing(self, post_mock):
+        result = MonitorResult(
+            checked_at="2026-01-01T00:00:00+00:00",
+            changed=True,
+            current_digest="new",
+            previous_digest="old",
+            page_count=3,
+        )
+        send_notification("", result)
+        post_mock.assert_not_called()
+
     @patch("monitor.run_monitor_check")
     def test_perform_check_serializes_concurrent_calls(self, run_check_mock):
         service = MonitorService(

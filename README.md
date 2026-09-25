@@ -19,7 +19,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Run this project with `python app.py`; this startup path starts both the web server and the background monitor.
+Run this project with `python app.py` (or another Flask/WSGI entrypoint). The monitor service starts during app initialization.
 
 ## Configuration
 

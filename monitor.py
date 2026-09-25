@@ -1,3 +1,4 @@
+import fcntl
 import hashlib
 import json
 import logging
@@ -8,7 +9,7 @@ import threading
 import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Dict, Optional
+from typing import Dict, Optional, TextIO
 from urllib.parse import urldefrag, urljoin, urlparse
 
 import requests
@@ -119,6 +120,16 @@ def _write_state(state_path: str, digest: str) -> None:
     os.replace(temp_path, state_path)
 
 
+def _with_state_lock(state_path: str):
+    lock_path = f"{state_path}.lock"
+    lock_dir = os.path.dirname(lock_path)
+    if lock_dir:
+        os.makedirs(lock_dir, exist_ok=True)
+    lock_file = open(lock_path, "w", encoding="utf-8")
+    fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+    return lock_file
+
+
 def send_notification(webhook_url: str, result: MonitorResult) -> None:
     if not webhook_url:
         logger.info("Change detected but NOTIFICATION_WEBHOOK_URL is not configured")
@@ -145,9 +156,10 @@ def run_monitor_check(
 ) -> MonitorResult:
     contents = crawl_site(start_url=start_url, max_pages=max_pages)
     current_digest = calculate_digest(contents)
-    previous_digest = _read_previous_digest(state_path)
-    changed = previous_digest is not None and previous_digest != current_digest
-    _write_state(state_path, current_digest)
+    with _with_state_lock(state_path):
+        previous_digest = _read_previous_digest(state_path)
+        changed = previous_digest is not None and previous_digest != current_digest
+        _write_state(state_path, current_digest)
 
     result = MonitorResult(
         checked_at=datetime.now(timezone.utc).isoformat(),
@@ -178,6 +190,7 @@ class MonitorService:
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
         self._check_lock = threading.Lock()
+        self._leader_lock_file: Optional[TextIO] = None
         self.last_result: Optional[MonitorResult] = None
 
     def perform_check(self) -> MonitorResult:
@@ -202,6 +215,18 @@ class MonitorService:
     def start(self) -> None:
         if self._thread and self._thread.is_alive():
             return
+        lock_path = f"{self.state_path}.leader.lock"
+        lock_dir = os.path.dirname(lock_path)
+        if lock_dir:
+            os.makedirs(lock_dir, exist_ok=True)
+        lock_file = open(lock_path, "w", encoding="utf-8")
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            lock_file.close()
+            logger.info("Another process already owns monitor leadership; skipping thread startup")
+            return
+        self._leader_lock_file = lock_file
         self._stop_event.clear()
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
@@ -210,3 +235,7 @@ class MonitorService:
         self._stop_event.set()
         if self._thread:
             self._thread.join(timeout=5)
+        if self._leader_lock_file:
+            fcntl.flock(self._leader_lock_file.fileno(), fcntl.LOCK_UN)
+            self._leader_lock_file.close()
+            self._leader_lock_file = None
