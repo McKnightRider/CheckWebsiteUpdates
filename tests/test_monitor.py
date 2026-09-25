@@ -29,6 +29,9 @@ from monitor import (
 
 
 class MonitorTests(unittest.TestCase):
+    def setUp(self):
+        get_github_repository.cache_clear()
+
     def test_digest_is_stable_for_same_inputs(self):
         content = {
             "https://example.com": "Hello",

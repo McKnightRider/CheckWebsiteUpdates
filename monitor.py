@@ -15,6 +15,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from email.message import EmailMessage
+from functools import lru_cache
 from html import escape
 from pathlib import Path
 from typing import Any, Dict, Optional, TextIO
@@ -799,6 +800,7 @@ def _iter_git_config_paths():
 
 
 
+@lru_cache(maxsize=1)
 def get_github_repository() -> Optional[str]:
     configured_repository = os.getenv("GITHUB_REPOSITORY", "").strip()
     normalized_repository = _normalize_github_repository(configured_repository)
