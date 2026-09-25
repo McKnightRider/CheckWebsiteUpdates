@@ -3,7 +3,7 @@ import os
 from hmac import compare_digest
 from threading import Lock
 
-from flask import Flask, abort, jsonify, request
+from flask import Flask, jsonify, request
 
 from monitor import DEFAULT_EMAIL_TO, DEFAULT_SITE_URL, EmailSettings, MonitorService
 
@@ -15,6 +15,11 @@ HISTORY_PATH = os.getenv("HISTORY_PATH", "site_data/history.json")
 SITE_OUTPUT_DIR = os.getenv("SITE_OUTPUT_DIR", "site")
 WEBHOOK_URL = os.getenv("NOTIFICATION_WEBHOOK_URL", "")
 CHECK_NOW_TOKEN = os.getenv("CHECK_NOW_TOKEN", "")
+CHECK_NOW_ALLOWED_ORIGINS = tuple(
+    origin.strip()
+    for origin in os.getenv("CHECK_NOW_ALLOWED_ORIGINS", "*").split(",")
+    if origin.strip()
+)
 EMAIL_TO = os.getenv("EMAIL_TO", DEFAULT_EMAIL_TO)
 
 app = Flask(__name__)
@@ -43,6 +48,32 @@ def ensure_service_started() -> None:
         _service_started = True
 
 
+def _resolve_check_now_allow_origin(request_origin: str) -> str | None:
+    if not request_origin:
+        return None
+    if "*" in CHECK_NOW_ALLOWED_ORIGINS:
+        return "*"
+    if request_origin in CHECK_NOW_ALLOWED_ORIGINS:
+        return request_origin
+    return None
+
+
+def _cors_json_response(payload: dict, status_code: int = 200):
+    response = jsonify(payload)
+    response.status_code = status_code
+    request_origin = request.headers.get("Origin", "")
+    allowed_origin = _resolve_check_now_allow_origin(request_origin)
+    if request_origin and allowed_origin is None:
+        return response
+    if allowed_origin is not None:
+        response.headers["Access-Control-Allow-Origin"] = allowed_origin
+        response.headers["Vary"] = "Origin"
+    response.headers["Access-Control-Allow-Headers"] = "X-Check-Token"
+    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    response.headers["Access-Control-Max-Age"] = "600"
+    return response
+
+
 @app.get("/")
 def index():
     result = service.last_result
@@ -66,14 +97,21 @@ def index():
     )
 
 
-@app.post("/check-now")
+@app.route("/check-now", methods=["POST", "OPTIONS"])
 def check_now():
+    if request.method == "OPTIONS":
+        return _cors_json_response({"ok": True})
+
+    request_origin = request.headers.get("Origin", "")
+    if request_origin and _resolve_check_now_allow_origin(request_origin) is None:
+        return _cors_json_response({"ok": False, "error": "Origin not allowed"}, status_code=403)
+
     submitted_token = request.headers.get("X-Check-Token", "")
     if not CHECK_NOW_TOKEN or not compare_digest(submitted_token, CHECK_NOW_TOKEN):
-        abort(403)
+        return _cors_json_response({"ok": False, "error": "Forbidden"}, status_code=403)
 
     result = service.perform_check()
-    return jsonify({"ok": True, "result": result.to_dict()})
+    return _cors_json_response({"ok": True, "result": result.to_dict()})
 
 
 @app.before_request

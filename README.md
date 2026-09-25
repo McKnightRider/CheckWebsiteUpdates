@@ -42,6 +42,7 @@ python monitor.py
 - `STRUCTURE_CONFIRMATION_RUNS` (optional, default `2`): consecutive runs required before newly discovered or missing URLs are accepted into the canonical monitored URL inventory.
 - `SITE_OUTPUT_DIR` (optional, default `site`): base directory for the generated GitHub Pages site. The published assets are written under `site/website/`, then mirrored into the tracked repository `website/` folder by GitHub Actions.
 - `CHECK_NOW_TOKEN` (optional but recommended): required token for `POST /check-now`, sent as `X-Check-Token` header.
+- `CHECK_NOW_ALLOWED_ORIGINS` (optional, default `*`): comma-separated list of browser origins allowed to call `POST /check-now`.
 - `EMAIL_TO` (optional): recipient for change emails.
 - `EMAIL_FROM` (required for email sending): sender address used for change emails.
 - `EMAIL_SMTP_HOST` (required for email sending): SMTP server hostname.
@@ -54,6 +55,10 @@ python monitor.py
 
 - `GET /` - monitor status and last check result
 - `POST /check-now` - trigger an immediate check (requires `X-Check-Token` header matching `CHECK_NOW_TOKEN`)
+
+## Manual refresh from the website
+
+The generated website includes a **Refresh** form that calls the monitor app's `POST /check-now` endpoint from the browser. Enter the deployed monitor service endpoint URL and the check token when prompted. If you are viewing the static GitHub Pages site, use the full monitor service URL rather than a relative path.
 
 ## GitHub Pages workflow
 

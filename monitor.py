@@ -104,6 +104,43 @@ ul {
   background: rgba(59, 130, 246, 0.15);
   border: 1px solid rgba(147, 197, 253, 0.35);
 }
+
+.refresh-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.refresh-form label {
+  font-weight: bold;
+}
+
+.refresh-form input,
+.refresh-form button {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.9);
+  color: inherit;
+}
+
+.refresh-form button {
+  width: auto;
+  cursor: pointer;
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(147, 197, 253, 0.45);
+}
+
+.refresh-form button[disabled] {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.refresh-help,
+.refresh-status {
+  margin: 0;
+}
 """
 WEBSITE_SCRIPT = """\
 document.addEventListener("DOMContentLoaded", () => {
@@ -119,6 +156,58 @@ document.addEventListener("DOMContentLoaded", () => {
       element.title = checkedAt;
     }
   }
+
+  const refreshForm = document.getElementById("refresh-form");
+  if (!refreshForm) {
+    return;
+  }
+
+  const endpointInput = document.getElementById("refresh-endpoint");
+  const tokenInput = document.getElementById("refresh-token");
+  const refreshButton = document.getElementById("refresh-button");
+  const refreshStatus = document.getElementById("refresh-status");
+  const storedEndpoint = window.localStorage.getItem("check-now-endpoint");
+  if (endpointInput && storedEndpoint) {
+    endpointInput.value = storedEndpoint;
+  }
+
+  refreshForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!endpointInput || !tokenInput || !refreshButton || !refreshStatus) {
+      return;
+    }
+
+    const endpoint = endpointInput.value.trim();
+    const token = tokenInput.value;
+    if (!endpoint || !token) {
+      refreshStatus.textContent = "Enter the check endpoint URL and token.";
+      return;
+    }
+
+    refreshStatus.textContent = "Refreshing…";
+    refreshButton.disabled = true;
+    window.localStorage.setItem("check-now-endpoint", endpoint);
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "X-Check-Token": token
+        }
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Refresh failed.");
+      }
+
+      const checkedAt = payload?.result?.checked_at || "just now";
+      refreshStatus.textContent = `Refresh complete at ${checkedAt}. Reload the page to see the latest site output.`;
+    } catch (error) {
+      refreshStatus.textContent = error instanceof Error ? error.message : "Refresh failed.";
+    } finally {
+      refreshButton.disabled = false;
+    }
+  });
 });
 """
 
@@ -723,6 +812,18 @@ def generate_site_html(start_url: str, history: list[dict[str, Any]]) -> str:
           <li><a href=\"history.csv\">Download history spreadsheet</a></li>
           <li><a href=\"history.json\">Download history JSON</a></li>
         </ul>
+      </section>
+      <section class=\"card\">
+        <h2>Manual refresh</h2>
+        <form id=\"refresh-form\" class=\"refresh-form\">
+          <label for=\"refresh-endpoint\">Check endpoint URL</label>
+          <input id=\"refresh-endpoint\" name=\"refresh-endpoint\" type=\"text\" inputmode=\"url\" value=\"/check-now\" required>
+          <label for=\"refresh-token\">Check token</label>
+          <input id=\"refresh-token\" name=\"refresh-token\" type=\"password\" autocomplete=\"off\" required>
+          <button id=\"refresh-button\" type=\"submit\">Refresh</button>
+          <p class=\"refresh-help\">Use the monitor app&apos;s <code>/check-now</code> endpoint. If this site is hosted on GitHub Pages, enter the full URL of the deployed monitor service endpoint.</p>
+          <p id=\"refresh-status\" class=\"refresh-status\" aria-live=\"polite\"></p>
+        </form>
       </section>
       {latest_summary}
       <section class=\"card\">
