@@ -1,4 +1,3 @@
-import fcntl
 import hashlib
 import json
 import logging
@@ -14,6 +13,11 @@ from urllib.parse import urldefrag, urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
+
+try:  # pragma: no cover - OS-dependent import
+    import fcntl
+except ImportError:  # pragma: no cover - non-Unix
+    fcntl = None
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +130,8 @@ def _with_state_lock(state_path: str):
     if lock_dir:
         os.makedirs(lock_dir, exist_ok=True)
     lock_file = open(lock_path, "w", encoding="utf-8")
-    fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+    if fcntl is not None:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
     return lock_file
 
 
@@ -154,9 +159,9 @@ def run_monitor_check(
     webhook_url: str,
     max_pages: int = 200,
 ) -> MonitorResult:
-    contents = crawl_site(start_url=start_url, max_pages=max_pages)
-    current_digest = calculate_digest(contents)
     with _with_state_lock(state_path):
+        contents = crawl_site(start_url=start_url, max_pages=max_pages)
+        current_digest = calculate_digest(contents)
         previous_digest = _read_previous_digest(state_path)
         changed = previous_digest is not None and previous_digest != current_digest
         _write_state(state_path, current_digest)
@@ -220,12 +225,13 @@ class MonitorService:
         if lock_dir:
             os.makedirs(lock_dir, exist_ok=True)
         lock_file = open(lock_path, "w", encoding="utf-8")
-        try:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            lock_file.close()
-            logger.info("Another process already owns monitor leadership; skipping thread startup")
-            return
+        if fcntl is not None:
+            try:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                lock_file.close()
+                logger.info("Another process already owns monitor leadership; skipping thread startup")
+                return
         self._leader_lock_file = lock_file
         self._stop_event.clear()
         self._thread = threading.Thread(target=self._loop, daemon=True)
@@ -236,6 +242,7 @@ class MonitorService:
         if self._thread:
             self._thread.join(timeout=5)
         if self._leader_lock_file:
-            fcntl.flock(self._leader_lock_file.fileno(), fcntl.LOCK_UN)
+            if fcntl is not None:
+                fcntl.flock(self._leader_lock_file.fileno(), fcntl.LOCK_UN)
             self._leader_lock_file.close()
             self._leader_lock_file = None

@@ -1,5 +1,6 @@
 import logging
 import os
+from threading import Lock
 from hmac import compare_digest
 
 from flask import Flask, abort, jsonify, request
@@ -20,6 +21,19 @@ service = MonitorService(
     webhook_url=WEBHOOK_URL,
     interval_seconds=12 * 60 * 60,
 )
+_service_start_lock = Lock()
+_service_started = False
+
+
+def ensure_service_started() -> None:
+    global _service_started
+    if _service_started:
+        return
+    with _service_start_lock:
+        if _service_started:
+            return
+        service.start()
+        _service_started = True
 
 
 @app.get("/")
@@ -52,8 +66,11 @@ def check_now():
     return jsonify({"ok": True, "result": result.__dict__})
 
 
-service.start()
+@app.before_request
+def startup():
+    ensure_service_started()
 
 
 if __name__ == "__main__":
+    ensure_service_started()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")))
