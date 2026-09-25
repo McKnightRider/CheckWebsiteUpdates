@@ -296,6 +296,12 @@ class MonitorTests(unittest.TestCase):
             canonical_port=8443,
         )
         self.assertEqual(normalized_with_userinfo, "https://user@www.example.com:8443/path")
+        normalized_preserves_explicit_port_when_scheme_changes = monitor._normalize_url(
+            "http://www.example.com:443/path/",
+            canonical_host="www.example.com",
+            canonical_scheme="https",
+        )
+        self.assertEqual(normalized_preserves_explicit_port_when_scheme_changes, "https://www.example.com:443/path")
 
     def test_format_timestamp_uses_day_month_year_and_uk_timezone(self):
         self.assertEqual(
@@ -311,6 +317,14 @@ class MonitorTests(unittest.TestCase):
                 monitor._format_timestamp("2026-01-09T12:48:20+00:00"),
                 "9 January 2026 at 12:48:20 PM GMT",
             )
+        self.assertEqual(
+            monitor._format_timestamp("2026-01-09T12:48:20Z"),
+            "9 January 2026 at 12:48:20 PM GMT",
+        )
+        self.assertEqual(
+            monitor._format_timestamp("2026-01-09T12:48:20"),
+            "9 January 2026 at 12:48:20 PM GMT",
+        )
 
     @patch("monitor.run_monitor_check")
     def test_perform_check_serializes_concurrent_calls(self, run_check_mock):
