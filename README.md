@@ -1,4 +1,4 @@
-# CheckWebsiteUpdates
+# Check DC Website Updates
 
 A small website monitor for [cdsdeterminationscommittees.org](https://www.cdsdeterminationscommittees.org/) and its internal sub-pages.
 
