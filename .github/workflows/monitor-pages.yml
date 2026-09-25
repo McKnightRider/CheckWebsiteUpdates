@@ -57,9 +57,10 @@ jobs:
             echo "Expected generated site/website directory was not created"
             exit 1
           fi
-          rm -rf website
           mkdir -p website
-          cp -R site/website/. website/
+          for generated_file in index.html styles.css app.js history.json history.csv; do
+            cp "site/website/${generated_file}" "website/${generated_file}"
+          done
 
       - name: Commit updated monitor history and website assets
         run: |
