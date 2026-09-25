@@ -278,7 +278,11 @@ def _render_change_items(changes: list[dict[str, str]]) -> str:
     for change in changes:
         change_type = escape(change["change_type"].title())
         url = escape(change["url"])
-        items.append(f'<li><strong>{change_type}</strong>: <a href="{url}">{url}</a></li>')
+        parsed = urlparse(change["url"])
+        if parsed.scheme in {"http", "https"}:
+            items.append(f'<li><strong>{change_type}</strong>: <a href="{url}">{url}</a></li>')
+        else:
+            items.append(f"<li><strong>{change_type}</strong>: {url}</li>")
     return "".join(items)
 
 
@@ -412,7 +416,7 @@ def send_notification(webhook_url: str, result: MonitorResult) -> None:
 
 
 def send_email_notification(email_settings: EmailSettings, result: MonitorResult) -> None:
-    if not email_settings.smtp_host or not email_settings.from_address:
+    if not email_settings.smtp_host or not email_settings.from_address or not email_settings.to_address:
         logger.info("Change detected but email settings are incomplete")
         return
 

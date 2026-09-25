@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  monitor:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -73,7 +73,7 @@ jobs:
           path: site
 
   deploy:
-    needs: monitor
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       pages: write

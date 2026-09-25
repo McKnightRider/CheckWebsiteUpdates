@@ -209,6 +209,22 @@ class MonitorTests(unittest.TestCase):
 
         smtp_mock.assert_not_called()
 
+    @patch("monitor.smtplib.SMTP")
+    def test_send_email_notification_skips_when_recipient_missing(self, smtp_mock):
+        result = MonitorResult(
+            checked_at="2026-01-01T00:00:00+00:00",
+            changed=True,
+            current_digest="new",
+            previous_digest="old",
+            page_count=3,
+            page_changes=[PageChange(url="https://example.com/a", change_type="updated")],
+        )
+        settings = EmailSettings("smtp.example.com", 587, "", "", "alerts@example.com", "", True)
+
+        send_email_notification(settings, result)
+
+        smtp_mock.assert_not_called()
+
     def test_write_site_files_outputs_html_and_history(self):
         history = [
             {
@@ -232,6 +248,26 @@ class MonitorTests(unittest.TestCase):
         self.assertIn("https://example.com/a", index_html)
         self.assertIn('href="https://example.com/a"', index_html)
         self.assertEqual(history_json, history)
+
+    def test_write_site_files_does_not_link_unsafe_urls(self):
+        history = [
+            {
+                "checked_at": "2026-01-01T00:00:00+00:00",
+                "changed": True,
+                "current_digest": "new",
+                "previous_digest": "old",
+                "page_count": 1,
+                "page_changes": [{"url": "javascript:alert(1)", "change_type": "updated"}],
+            }
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "site"
+            write_site_files(str(output_dir), "https://example.com", history)
+            index_html = (output_dir / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("javascript:alert(1)", index_html)
+        self.assertNotIn('href="javascript:alert(1)"', index_html)
 
     @patch("monitor.run_monitor_check")
     def test_perform_check_serializes_concurrent_calls(self, run_check_mock):
