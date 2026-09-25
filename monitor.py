@@ -92,14 +92,21 @@ def _normalize_url(raw_url: str, canonical_host: Optional[str] = None, canonical
     normalized, _ = urldefrag(raw_url.strip())
     parsed = urlparse(normalized)
     if parsed.scheme in {"http", "https"} and parsed.netloc:
-        host = parsed.netloc.lower()
+        host = (parsed.hostname or "").lower()
+        if not host:
+            return normalized.rstrip("/") or normalized
         scheme = parsed.scheme.lower()
         canonical_host_lower = canonical_host.lower() if canonical_host else None
         if canonical_host_lower and host == canonical_host_lower:
             host = canonical_host_lower
             if canonical_scheme:
                 scheme = canonical_scheme.lower()
-        parsed = parsed._replace(scheme=scheme, netloc=host)
+        port = parsed.port
+        default_port = 443 if scheme == "https" else 80
+        if port == default_port:
+            port = None
+        netloc = f"{host}:{port}" if port is not None else host
+        parsed = parsed._replace(scheme=scheme, netloc=netloc)
         normalized = parsed.geturl()
     return normalized.rstrip("/") or normalized
 
@@ -117,7 +124,7 @@ def _extract_links(html: str, page_url: str, allowed_host: str, canonical_scheme
         parsed = urlparse(candidate)
         if parsed.scheme not in {"http", "https"}:
             continue
-        if parsed.netloc.lower() != allowed_host:
+        if (parsed.hostname or "").lower() != allowed_host:
             continue
         links.add(candidate)
     return links
@@ -134,7 +141,7 @@ def _normalize_text(html: str) -> str:
 def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[str, str]:
     start_url = _normalize_url(start_url)
     parsed_start_url = urlparse(start_url)
-    allowed_host = parsed_start_url.netloc.lower()
+    allowed_host = (parsed_start_url.hostname or parsed_start_url.netloc).lower()
     canonical_scheme = parsed_start_url.scheme.lower()
     start_url = _normalize_url(start_url, canonical_host=allowed_host, canonical_scheme=canonical_scheme)
 

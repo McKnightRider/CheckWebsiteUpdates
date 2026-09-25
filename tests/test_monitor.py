@@ -276,6 +276,12 @@ class MonitorTests(unittest.TestCase):
             canonical_scheme="https",
         )
         self.assertEqual(normalized, "https://www.example.com/path")
+        normalized_with_port = monitor._normalize_url(
+            "https://www.example.com:443/path/",
+            canonical_host="www.example.com",
+            canonical_scheme="https",
+        )
+        self.assertEqual(normalized_with_port, "https://www.example.com/path")
 
     def test_format_timestamp_uses_day_month_year_and_uk_timezone(self):
         self.assertEqual(
