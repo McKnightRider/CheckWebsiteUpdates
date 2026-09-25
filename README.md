@@ -19,7 +19,8 @@ pip install -r requirements.txt
 python app.py
 ```
 
-The app starts a web server (Flask default) and a background monitor.
+When started with `python app.py`, the app starts the web server and the background monitor immediately.
+When hosted through WSGI, the monitor starts on the first request.
 
 ## Configuration
 
