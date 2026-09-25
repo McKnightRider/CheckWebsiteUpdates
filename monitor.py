@@ -826,6 +826,14 @@ def _build_history_csv(history: list[dict[str, Any]]) -> str:
 
 
 
+def _render_history_heading(checked_at: str, *, is_first_check: bool = False) -> str:
+    timestamp = escape(_format_timestamp(checked_at))
+    if is_first_check:
+        return f"First Check: {timestamp}"
+    return timestamp
+
+
+
 def generate_site_html(
     start_url: str,
     monitored_urls: Optional[list[str]],
@@ -859,7 +867,7 @@ def generate_site_html(
     history_markup = "".join(
         f"""
         <article class=\"card history-item\">
-          <h3 data-checked-at="{escape(entry['checked_at'])}">{escape(_format_timestamp(entry['checked_at']))}</h3>
+          <h3 data-checked-at="{escape(entry['checked_at'])}">{_render_history_heading(entry['checked_at'], is_first_check=len(history) == 1)}</h3>
           <p><strong>Status:</strong> {'Changes detected' if entry['changed'] else 'No changes detected'}</p>
           <p><strong>Pages checked:</strong> {entry['page_count']}</p>
           <ul>{_render_change_items(entry.get('page_changes', []))}</ul>

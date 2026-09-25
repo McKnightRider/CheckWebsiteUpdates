@@ -297,6 +297,25 @@ class MonitorTests(unittest.TestCase):
         self.assertIn("check-now-endpoint", script)
         self.assertEqual(asset_manifest, ["index.html", "styles.css", "app.js", "history.json", "history.csv"])
 
+    def test_write_site_files_labels_first_history_item(self):
+        history = [
+            {
+                "checked_at": "2026-01-01T00:00:00+00:00",
+                "changed": False,
+                "current_digest": "same",
+                "previous_digest": None,
+                "page_count": 1,
+                "page_changes": [],
+            }
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "site"
+            write_site_files(str(output_dir), "https://example.com", history)
+            index_html = (output_dir / "website" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("First Check: 1 January 2026 at 12:00:00 AM GMT", index_html)
+
     def test_write_site_files_does_not_link_unsafe_urls(self):
         history = [
             {
