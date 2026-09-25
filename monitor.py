@@ -15,6 +15,7 @@ from html import escape
 from pathlib import Path
 from typing import Any, Dict, Optional, TextIO
 from urllib.parse import urldefrag, urljoin, urlparse
+from zoneinfo import ZoneInfo
 
 import requests
 from bs4 import BeautifulSoup
@@ -87,21 +88,36 @@ class EmailSettings:
 
 
 
-def _normalize_url(raw_url: str) -> str:
-    normalized, _ = urldefrag(raw_url)
+def _normalize_url(raw_url: str, canonical_host: Optional[str] = None, canonical_scheme: Optional[str] = None) -> str:
+    normalized, _ = urldefrag(raw_url.strip())
+    parsed = urlparse(normalized)
+    if parsed.scheme in {"http", "https"} and parsed.netloc:
+        host = parsed.netloc.lower()
+        scheme = parsed.scheme.lower()
+        canonical_host_lower = canonical_host.lower() if canonical_host else None
+        if canonical_host_lower and host == canonical_host_lower:
+            host = canonical_host_lower
+            if canonical_scheme:
+                scheme = canonical_scheme.lower()
+        parsed = parsed._replace(scheme=scheme, netloc=host)
+        normalized = parsed.geturl()
     return normalized.rstrip("/") or normalized
 
 
 
-def _extract_links(html: str, page_url: str, allowed_host: str) -> set[str]:
+def _extract_links(html: str, page_url: str, allowed_host: str, canonical_scheme: str) -> set[str]:
     soup = BeautifulSoup(html, "html.parser")
     links = set()
     for anchor in soup.find_all("a", href=True):
-        candidate = _normalize_url(urljoin(page_url, anchor["href"]))
+        candidate = _normalize_url(
+            urljoin(page_url, anchor["href"]),
+            canonical_host=allowed_host,
+            canonical_scheme=canonical_scheme,
+        )
         parsed = urlparse(candidate)
         if parsed.scheme not in {"http", "https"}:
             continue
-        if parsed.netloc != allowed_host:
+        if parsed.netloc.lower() != allowed_host:
             continue
         links.add(candidate)
     return links
@@ -117,7 +133,10 @@ def _normalize_text(html: str) -> str:
 
 def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[str, str]:
     start_url = _normalize_url(start_url)
-    allowed_host = urlparse(start_url).netloc
+    parsed_start_url = urlparse(start_url)
+    allowed_host = parsed_start_url.netloc.lower()
+    canonical_scheme = parsed_start_url.scheme.lower()
+    start_url = _normalize_url(start_url, canonical_host=allowed_host, canonical_scheme=canonical_scheme)
 
     session = requests.Session()
     urls = queue.Queue()
@@ -139,7 +158,7 @@ def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[
 
             content_by_url[current] = _normalize_text(response.text)
 
-            for link in _extract_links(response.text, current, allowed_host):
+            for link in _extract_links(response.text, current, allowed_host, canonical_scheme):
                 if link not in visited:
                     urls.put(link)
         except requests.RequestException as exc:
@@ -264,7 +283,18 @@ def _append_history(history_path: Optional[str], result: MonitorResult, limit: i
 
 def _format_timestamp(timestamp: str) -> str:
     try:
-        return datetime.fromisoformat(timestamp).astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        london_time = parsed.astimezone(ZoneInfo("Europe/London"))
+        month_name = london_time.strftime("%B")
+        hour_12 = london_time.hour % 12 or 12
+        am_pm = "AM" if london_time.hour < 12 else "PM"
+        zone_abbr = london_time.tzname() or "GMT"
+        return (
+            f"{london_time.day} {month_name} {london_time.year} at "
+            f"{hour_12}:{london_time.minute:02d}:{london_time.second:02d} {am_pm} {zone_abbr}"
+        )
     except ValueError:
         return timestamp
 

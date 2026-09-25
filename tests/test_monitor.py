@@ -269,6 +269,24 @@ class MonitorTests(unittest.TestCase):
         self.assertIn("javascript:alert(1)", index_html)
         self.assertNotIn('href="javascript:alert(1)"', index_html)
 
+    def test_normalize_url_canonicalizes_scheme_for_same_host(self):
+        normalized = monitor._normalize_url(
+            "http://www.example.com/path/",
+            canonical_host="www.example.com",
+            canonical_scheme="https",
+        )
+        self.assertEqual(normalized, "https://www.example.com/path")
+
+    def test_format_timestamp_uses_day_month_year_and_uk_timezone(self):
+        self.assertEqual(
+            monitor._format_timestamp("2026-09-25T12:48:20+00:00"),
+            "25 September 2026 at 1:48:20 PM BST",
+        )
+        self.assertEqual(
+            monitor._format_timestamp("2026-01-09T12:48:20+00:00"),
+            "9 January 2026 at 12:48:20 PM GMT",
+        )
+
     @patch("monitor.run_monitor_check")
     def test_perform_check_serializes_concurrent_calls(self, run_check_mock):
         service = MonitorService(
