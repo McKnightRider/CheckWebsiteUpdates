@@ -6,6 +6,7 @@ import logging
 import os
 import queue
 import re
+import shutil
 import smtplib
 import ssl
 import threading
@@ -574,6 +575,8 @@ def write_site_files(site_output_dir: Optional[str], start_url: str, history: li
     output_dir = Path(site_output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     website_dir = output_dir / WEBSITE_DIRNAME
+    if website_dir.exists():
+        shutil.rmtree(website_dir)
     website_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "index.html").write_text(_generate_site_redirect_html(), encoding="utf-8")
     (website_dir / "index.html").write_text(generate_site_html(start_url=start_url, history=history), encoding="utf-8")
