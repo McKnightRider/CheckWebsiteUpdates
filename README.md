@@ -37,7 +37,7 @@ python monitor.py
 - `HISTORY_PATH` (optional, default `site_data/history.json`): file where recent check history is stored.
 - `SITE_OUTPUT_DIR` (optional, default `site`): directory for the generated GitHub Pages site.
 - `CHECK_NOW_TOKEN` (optional but recommended): required token for `POST /check-now`, sent as `X-Check-Token` header.
-- `EMAIL_TO` (optional, default `mcknightrider@hotmail.com`): recipient for change emails.
+- `EMAIL_TO` (optional): recipient for change emails.
 - `EMAIL_FROM` (required for email sending): sender address used for change emails.
 - `EMAIL_SMTP_HOST` (required for email sending): SMTP server hostname.
 - `EMAIL_SMTP_PORT` (optional, default `587`): SMTP server port.
@@ -66,5 +66,6 @@ To enable email delivery in GitHub Actions, add these repository secrets if your
 - `EMAIL_SMTP_PORT`
 - `EMAIL_SMTP_USERNAME`
 - `EMAIL_SMTP_PASSWORD`
+- `EMAIL_TO`
 - `EMAIL_FROM`
 - `EMAIL_USE_TLS` (optional)

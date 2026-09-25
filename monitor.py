@@ -26,7 +26,7 @@ except ImportError:  # pragma: no cover - non-Unix
 
 logger = logging.getLogger(__name__)
 DEFAULT_SITE_URL = "https://www.cdsdeterminationscommittees.org"
-DEFAULT_EMAIL_TO = "mcknightrider@hotmail.com"
+DEFAULT_EMAIL_TO = ""
 
 
 @dataclass(frozen=True)
