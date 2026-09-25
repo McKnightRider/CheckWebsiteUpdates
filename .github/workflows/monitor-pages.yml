@@ -90,6 +90,12 @@ jobs:
                   validate_relative_path(raw_path)
                   for raw_path in json.loads(previous_manifest.read_text(encoding="utf-8"))
               }
+          source_file_map = {}
+          for relative_path in sorted(current_files | {manifest_name}):
+              source_path = source_dir / relative_path
+              if not source_path.is_file():
+                  raise SystemExit(f"Expected generated file {source_path} was not created")
+              source_file_map[relative_path] = source_path
 
           for relative_path in sorted(previous_files - current_files):
               candidate = target_dir / relative_path
@@ -100,8 +106,8 @@ jobs:
                       parent.rmdir()
                       parent = parent.parent
 
-          for relative_path in sorted(current_files | {manifest_name}):
-              source_path = source_dir / relative_path
+          for relative_path in sorted(source_file_map):
+              source_path = source_file_map[relative_path]
               destination_path = target_dir / relative_path
               destination_path.parent.mkdir(parents=True, exist_ok=True)
               shutil.copy2(source_path, destination_path)
