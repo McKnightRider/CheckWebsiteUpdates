@@ -361,6 +361,7 @@ class MonitorTests(unittest.TestCase):
             repo_dir = Path(tmpdir)
             git_dir = repo_dir / ".git"
             git_dir.mkdir()
+            (repo_dir / "monitor.py").write_text("", encoding="utf-8")
             (git_dir / "config").write_text(
                 '[core]\n\trepositoryformatversion = 0\n[remote "origin"]\n\turl = git@github.com:octo/repo.git\n',
                 encoding="utf-8",

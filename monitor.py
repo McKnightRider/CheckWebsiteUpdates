@@ -785,25 +785,39 @@ def _normalize_github_repository(repository: str) -> Optional[str]:
 
 
 
+def _iter_git_config_paths():
+    search_roots = [Path.cwd(), Path(__file__).resolve().parent]
+    visited: set[Path] = set()
+    for root in search_roots:
+        for candidate_dir in (root, *root.parents):
+            if candidate_dir in visited:
+                continue
+            visited.add(candidate_dir)
+            git_config_path = candidate_dir / ".git" / "config"
+            if git_config_path.is_file():
+                yield git_config_path
+
+
+
 def get_github_repository() -> Optional[str]:
     configured_repository = os.getenv("GITHUB_REPOSITORY", "").strip()
     normalized_repository = _normalize_github_repository(configured_repository)
     if normalized_repository:
         return normalized_repository
 
-    git_config_path = Path(__file__).resolve().parent / ".git" / "config"
-    if not git_config_path.is_file():
-        return None
-
-    current_section = ""
-    for raw_line in git_config_path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if line.startswith("[") and line.endswith("]"):
-            current_section = line
-            continue
-        if current_section != '[remote "origin"]' or not line.startswith("url ="):
-            continue
-        return _extract_github_repository(line.partition("=")[2])
+    for git_config_path in _iter_git_config_paths():
+        current_section = ""
+        for raw_line in git_config_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if line.startswith("[") and line.endswith("]"):
+                current_section = line
+                continue
+            if current_section != '[remote "origin"]' or not line.startswith("url ="):
+                continue
+            extracted_repository = _extract_github_repository(line.partition("=")[2])
+            if extracted_repository:
+                return extracted_repository
+            break
     return None
 
 
