@@ -169,6 +169,9 @@ def crawl_site(start_url: str, max_pages: int = 200, timeout: int = 20) -> Dict[
     allowed_host = (parsed_start_url.hostname or parsed_start_url.netloc).lower()
     canonical_scheme = parsed_start_url.scheme.lower()
     canonical_port = parsed_start_url.port
+    default_port_for_scheme = 443 if canonical_scheme == "https" else 80
+    if canonical_port == default_port_for_scheme:
+        canonical_port = None
     start_url = _normalize_url(
         start_url,
         canonical_host=allowed_host,
@@ -324,11 +327,16 @@ def _format_timestamp(timestamp: str) -> str:
         parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=timezone.utc)
-        london_time = parsed.astimezone(ZoneInfo("Europe/London"))
+        zone_abbr_override = None
+        try:
+            london_time = parsed.astimezone(ZoneInfo("Europe/London"))
+        except Exception:
+            london_time = parsed.astimezone(timezone.utc)
+            zone_abbr_override = "GMT"
         month_name = london_time.strftime("%B")
         hour_12 = london_time.hour % 12 or 12
         am_pm = "AM" if london_time.hour < 12 else "PM"
-        zone_abbr = london_time.tzname() or "GMT"
+        zone_abbr = zone_abbr_override or london_time.tzname() or "GMT"
         return (
             f"{london_time.day} {month_name} {london_time.year} at "
             f"{hour_12}:{london_time.minute:02d}:{london_time.second:02d} {am_pm} {zone_abbr}"

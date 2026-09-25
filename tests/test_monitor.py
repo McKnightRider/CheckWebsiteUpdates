@@ -306,6 +306,11 @@ class MonitorTests(unittest.TestCase):
             monitor._format_timestamp("2026-01-09T12:48:20+00:00"),
             "9 January 2026 at 12:48:20 PM GMT",
         )
+        with patch("monitor.ZoneInfo", side_effect=RuntimeError("missing tzdata")):
+            self.assertEqual(
+                monitor._format_timestamp("2026-01-09T12:48:20+00:00"),
+                "9 January 2026 at 12:48:20 PM GMT",
+            )
 
     @patch("monitor.run_monitor_check")
     def test_perform_check_serializes_concurrent_calls(self, run_check_mock):
