@@ -5,6 +5,7 @@ import os
 import queue
 import re
 import smtplib
+import ssl
 import threading
 import tempfile
 from dataclasses import asdict, dataclass, field
@@ -438,7 +439,7 @@ def send_email_notification(email_settings: EmailSettings, result: MonitorResult
 
     with smtplib.SMTP(email_settings.smtp_host, email_settings.smtp_port, timeout=20) as smtp:
         if email_settings.use_tls:
-            smtp.starttls()
+            smtp.starttls(context=ssl.create_default_context())
         if email_settings.username:
             smtp.login(email_settings.username, email_settings.password)
         smtp.send_message(message)

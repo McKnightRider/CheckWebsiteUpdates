@@ -48,7 +48,9 @@ jobs:
           EMAIL_SMTP_PASSWORD: ${{ secrets.EMAIL_SMTP_PASSWORD }}
           EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS }}
           NOTIFICATION_WEBHOOK_URL: ${{ secrets.NOTIFICATION_WEBHOOK_URL }}
-        run: python monitor.py
+        run: |
+          mkdir -p site_data site
+          python monitor.py
 
       - name: Commit updated monitor history
         run: |

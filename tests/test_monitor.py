@@ -230,6 +230,7 @@ class MonitorTests(unittest.TestCase):
 
         self.assertIn("Latest check", index_html)
         self.assertIn("https://example.com/a", index_html)
+        self.assertIn('href="https://example.com/a"', index_html)
         self.assertEqual(history_json, history)
 
     @patch("monitor.run_monitor_check")
