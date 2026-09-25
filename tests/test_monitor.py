@@ -3,6 +3,7 @@ import tempfile
 import threading
 import time
 import unittest
+import csv
 from pathlib import Path
 from unittest.mock import patch
 
@@ -234,6 +235,14 @@ class MonitorTests(unittest.TestCase):
                 "previous_digest": "old",
                 "page_count": 2,
                 "page_changes": [{"url": "https://example.com/a", "change_type": "updated"}],
+            },
+            {
+                "checked_at": "2026-01-02T00:00:00+00:00",
+                "changed": False,
+                "current_digest": "same",
+                "previous_digest": "same",
+                "page_count": 2,
+                "page_changes": [],
             }
         ]
 
@@ -241,13 +250,31 @@ class MonitorTests(unittest.TestCase):
             output_dir = Path(tmpdir) / "site"
             write_site_files(str(output_dir), "https://example.com", history)
 
-            index_html = (output_dir / "index.html").read_text(encoding="utf-8")
-            history_json = json.loads((output_dir / "history.json").read_text(encoding="utf-8"))
+            redirect_html = (output_dir / "index.html").read_text(encoding="utf-8")
+            website_dir = output_dir / "website"
+            index_html = (website_dir / "index.html").read_text(encoding="utf-8")
+            history_json = json.loads((website_dir / "history.json").read_text(encoding="utf-8"))
+            history_csv = list(csv.DictReader((website_dir / "history.csv").read_text(encoding="utf-8").splitlines()))
+            stylesheet = (website_dir / "styles.css").read_text(encoding="utf-8")
+            script = (website_dir / "app.js").read_text(encoding="utf-8")
 
+        self.assertIn('href="website/"', redirect_html)
+        self.assertNotIn("http-equiv", redirect_html)
         self.assertIn("Latest check", index_html)
+        self.assertIn('href="history.csv"', index_html)
+        self.assertIn('src="app.js"', index_html)
         self.assertIn("https://example.com/a", index_html)
         self.assertIn('href="https://example.com/a"', index_html)
         self.assertEqual(history_json, history)
+        self.assertEqual(history_csv[0]["checked_at"], "2026-01-01T00:00:00+00:00")
+        self.assertEqual(history_csv[0]["checked_at_display"], "1 January 2026 at 12:00:00 AM GMT")
+        self.assertEqual(history_csv[0]["changed"], "true")
+        self.assertIn('"url":"https://example.com/a"', history_csv[0]["page_changes"])
+        self.assertEqual(history_csv[1]["checked_at"], "2026-01-02T00:00:00+00:00")
+        self.assertEqual(history_csv[1]["checked_at_display"], "2 January 2026 at 12:00:00 AM GMT")
+        self.assertEqual(history_csv[1]["changed"], "false")
+        self.assertIn(".resource-list", stylesheet)
+        self.assertIn("history-count", script)
 
     def test_write_site_files_does_not_link_unsafe_urls(self):
         history = [
@@ -264,10 +291,59 @@ class MonitorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             output_dir = Path(tmpdir) / "site"
             write_site_files(str(output_dir), "https://example.com", history)
-            index_html = (output_dir / "index.html").read_text(encoding="utf-8")
+            index_html = (output_dir / "website" / "index.html").read_text(encoding="utf-8")
 
         self.assertIn("javascript:alert(1)", index_html)
         self.assertNotIn('href="javascript:alert(1)"', index_html)
+
+    def test_write_site_files_preserves_unmanaged_assets(self):
+        history = [
+            {
+                "checked_at": "2026-01-01T00:00:00+00:00",
+                "changed": False,
+                "current_digest": "same",
+                "previous_digest": "same",
+                "page_count": 1,
+                "page_changes": [],
+            }
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "site"
+            stale_file = output_dir / "website" / "stale.txt"
+            stale_file.parent.mkdir(parents=True, exist_ok=True)
+            stale_file.write_text("old", encoding="utf-8")
+
+            write_site_files(str(output_dir), "https://example.com", history)
+
+            self.assertTrue(stale_file.exists())
+
+    def test_write_site_files_replaces_symlinked_website_dir(self):
+        history = [
+            {
+                "checked_at": "2026-01-01T00:00:00+00:00",
+                "changed": False,
+                "current_digest": "same",
+                "previous_digest": "same",
+                "page_count": 1,
+                "page_changes": [],
+            }
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "site"
+            external_dir = Path(tmpdir) / "external"
+            external_dir.mkdir(parents=True, exist_ok=True)
+            protected_file = external_dir / "protected.txt"
+            protected_file.write_text("keep", encoding="utf-8")
+
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / "website").symlink_to(external_dir, target_is_directory=True)
+
+            write_site_files(str(output_dir), "https://example.com", history)
+
+            self.assertTrue(protected_file.exists())
+            self.assertTrue((output_dir / "website" / "index.html").exists())
 
     def test_normalize_url_canonicalizes_scheme_for_same_host(self):
         normalized = monitor._normalize_url(
