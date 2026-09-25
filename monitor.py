@@ -674,7 +674,7 @@ def _build_history_csv(history: list[dict[str, Any]]) -> str:
 
 def generate_site_html(start_url: str, history: list[dict[str, Any]]) -> str:
     latest = history[-1] if history else None
-    title = "CDS Determinations Committee Monitor"
+    title = "DC Website Update Monitor"
 
     if latest:
         latest_summary = f"""
