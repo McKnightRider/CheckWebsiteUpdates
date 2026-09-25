@@ -9,12 +9,24 @@
   <body>
     <main class="layout">
       <section class="card">
-        <h1>CDS Determinations Committee Monitor</h1>
+        <h1>DC Website Update Monitor</h1>
         <p>This site tracks checks against <a href="https://www.cdsdeterminationscommittees.org">https://www.cdsdeterminationscommittees.org</a>.</p>
         <ul class="resource-list">
           <li><a href="history.csv">Download history spreadsheet</a></li>
           <li><a href="history.json">Download history JSON</a></li>
         </ul>
+      </section>
+      <section class="card">
+        <h2>Manual refresh</h2>
+        <form id="refresh-form" class="refresh-form">
+          <label for="refresh-endpoint">Check endpoint URL</label>
+          <input id="refresh-endpoint" name="refresh-endpoint" type="text" inputmode="url" value="/check-now" required>
+          <label for="refresh-token">Check token</label>
+          <input id="refresh-token" name="refresh-token" type="password" autocomplete="off" required>
+          <button id="refresh-button" type="submit">Refresh</button>
+          <p class="refresh-help">Use the monitor app&apos;s <code>/check-now</code> endpoint. If this site is hosted on GitHub Pages, enter the full URL of the deployed monitor service endpoint.</p>
+          <p id="refresh-status" class="refresh-status" aria-live="polite"></p>
+        </form>
       </section>
       
         <section class="card">
