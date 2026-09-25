@@ -368,7 +368,7 @@ class MonitorTests(unittest.TestCase):
             previous_cwd = Path.cwd()
             try:
                 os.chdir(repo_dir)
-                with patch.dict(os.environ, {"GITHUB_REPOSITORY": ""}):
+                with patch.dict(os.environ, {"GITHUB_REPOSITORY": "invalid"}):
                     repository = get_github_repository()
             finally:
                 os.chdir(previous_cwd)

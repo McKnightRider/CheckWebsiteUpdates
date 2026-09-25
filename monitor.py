@@ -777,10 +777,19 @@ def _extract_github_repository(remote_url: str) -> Optional[str]:
 
 
 
+def _normalize_github_repository(repository: str) -> Optional[str]:
+    owner, separator, repo = repository.strip().partition("/")
+    if separator and owner and repo and "/" not in repo:
+        return f"{owner}/{repo}"
+    return None
+
+
+
 def get_github_repository() -> Optional[str]:
     configured_repository = os.getenv("GITHUB_REPOSITORY", "").strip()
-    if configured_repository:
-        return configured_repository
+    normalized_repository = _normalize_github_repository(configured_repository)
+    if normalized_repository:
+        return normalized_repository
 
     git_config_path = Path(".git/config")
     if not git_config_path.is_file():
@@ -800,11 +809,10 @@ def get_github_repository() -> Optional[str]:
 
 
 def get_manual_refresh_workflow_url(repository: Optional[str]) -> Optional[str]:
-    if not repository:
+    normalized_repository = _normalize_github_repository(repository or "")
+    if not normalized_repository:
         return None
-    owner, separator, repo = repository.strip().partition("/")
-    if not separator or not owner or not repo or "/" in repo:
-        return None
+    owner, _, repo = normalized_repository.partition("/")
     return f"https://github.com/{owner}/{repo}/actions/workflows/{MONITOR_WORKFLOW_FILENAME}"
 
 
