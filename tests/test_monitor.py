@@ -11,6 +11,7 @@ import monitor
 import requests
 
 from monitor import (
+    CrawlResult,
     EmailSettings,
     MonitorResult,
     MonitorService,
@@ -61,18 +62,32 @@ class MonitorTests(unittest.TestCase):
     @patch("monitor.send_notification")
     @patch("monitor.write_site_files")
     @patch("monitor._append_history")
+    @patch("monitor.fetch_inventory_pages")
     @patch("monitor.crawl_site")
     def test_change_detection_triggers_notifications_and_tracks_pages(
         self,
         crawl_site_mock,
+        fetch_inventory_pages_mock,
         append_history_mock,
         write_site_files_mock,
         send_notification_mock,
         send_email_notification_mock,
     ):
         crawl_site_mock.side_effect = [
-            {"https://example.com": "A"},
-            {"https://example.com": "B", "https://example.com/new": "C"},
+            CrawlResult(
+                content_by_url={"https://example.com": "A"},
+                discovered_urls={"https://example.com"},
+                fetch_failures={},
+            ),
+            CrawlResult(
+                content_by_url={"https://example.com": "B", "https://example.com/new": "C"},
+                discovered_urls={"https://example.com", "https://example.com/new"},
+                fetch_failures={},
+            ),
+        ]
+        fetch_inventory_pages_mock.side_effect = [
+            ({"https://example.com": "A"}, {}),
+            ({"https://example.com": "B", "https://example.com/new": "C"}, {}),
         ]
         append_history_mock.side_effect = lambda history_path, result, limit=100: [result.to_dict()]
 
@@ -112,7 +127,6 @@ class MonitorTests(unittest.TestCase):
             second.page_changes,
             [
                 PageChange(url="https://example.com", change_type="updated"),
-                PageChange(url="https://example.com/new", change_type="added"),
             ],
         )
 
@@ -404,6 +418,94 @@ class MonitorTests(unittest.TestCase):
             canonical_scheme="https",
         )
         self.assertEqual(links, {"https://www.example.com/path-a"})
+
+    def test_normalize_url_strips_tracking_query_params(self):
+        normalized = monitor._normalize_url(
+            "https://www.example.com/path?utm_source=a&z=1&fbclid=abc&y=2",
+            canonical_host="www.example.com",
+            canonical_scheme="https",
+        )
+        self.assertEqual(normalized, "https://www.example.com/path?y=2&z=1")
+
+    def test_extract_links_ignores_noisy_paths(self):
+        html = """
+        <a href="https://www.example.com/category/news">Category</a>
+        <a href="https://www.example.com/committee/americas/page/2">Pagination</a>
+        <a href="https://www.example.com/about">About</a>
+        """
+        links = monitor._extract_links(
+            html=html,
+            page_url="https://www.example.com",
+            allowed_host="www.example.com",
+            allowed_port=443,
+            canonical_scheme="https",
+        )
+        self.assertEqual(links, {"https://www.example.com/about"})
+
+    @patch("monitor.send_email_notification")
+    @patch("monitor.send_notification")
+    @patch("monitor.write_site_files")
+    @patch("monitor._append_history")
+    @patch("monitor.fetch_inventory_pages")
+    @patch("monitor.crawl_site")
+    def test_structural_url_changes_do_not_alert_until_content_changes(
+        self,
+        crawl_site_mock,
+        fetch_inventory_pages_mock,
+        append_history_mock,
+        write_site_files_mock,
+        send_notification_mock,
+        send_email_notification_mock,
+    ):
+        crawl_site_mock.side_effect = [
+            CrawlResult({"https://example.com": "A"}, {"https://example.com"}, {}),
+            CrawlResult({"https://example.com": "A", "https://example.com/new": "N"}, {"https://example.com", "https://example.com/new"}, {}),
+            CrawlResult({"https://example.com": "A", "https://example.com/new": "N"}, {"https://example.com", "https://example.com/new"}, {}),
+        ]
+        fetch_inventory_pages_mock.side_effect = [
+            ({"https://example.com": "A"}, {}),
+            ({"https://example.com": "A"}, {}),
+            ({"https://example.com": "A", "https://example.com/new": "N"}, {}),
+        ]
+        append_history_mock.side_effect = lambda history_path, result, limit=100: [result.to_dict()]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_path = str(Path(tmpdir) / "state.json")
+            history_path = str(Path(tmpdir) / "history.json")
+            first = run_monitor_check(
+                start_url="https://example.com",
+                state_path=state_path,
+                webhook_url="https://hooks.example.com",
+                history_path=history_path,
+                site_output_dir="/tmp/site",
+                email_settings=EmailSettings(),
+                structure_confirmation_runs=2,
+            )
+            second = run_monitor_check(
+                start_url="https://example.com",
+                state_path=state_path,
+                webhook_url="https://hooks.example.com",
+                history_path=history_path,
+                site_output_dir="/tmp/site",
+                email_settings=EmailSettings(),
+                structure_confirmation_runs=2,
+            )
+            third = run_monitor_check(
+                start_url="https://example.com",
+                state_path=state_path,
+                webhook_url="https://hooks.example.com",
+                history_path=history_path,
+                site_output_dir="/tmp/site",
+                email_settings=EmailSettings(),
+                structure_confirmation_runs=2,
+            )
+
+        self.assertFalse(first.changed)
+        self.assertFalse(second.changed)
+        self.assertFalse(third.changed)
+        send_notification_mock.assert_not_called()
+        send_email_notification_mock.assert_not_called()
+        write_site_files_mock.assert_called()
 
     def test_format_timestamp_uses_day_month_year_and_uk_timezone(self):
         self.assertEqual(
