@@ -753,9 +753,9 @@ def _format_timestamp(timestamp: str) -> str:
 
 
 
-def _render_change_items(changes: list[dict[str, Any]]) -> str:
+def _render_change_items(changes: list[dict[str, Any]], *, show_no_changes: bool = True) -> str:
     if not changes:
-        return "<li>No page changes detected.</li>"
+        return "<li>No page changes detected.</li>" if show_no_changes else ""
 
     items = []
     for change in changes:
@@ -766,9 +766,35 @@ def _render_change_items(changes: list[dict[str, Any]]) -> str:
             items.append(f'<li><strong>{change_type}</strong>: <a href="{url}">{url}</a></li>')
         else:
             items.append(f"<li><strong>{change_type}</strong>: {url}</li>")
-        for added_link in change.get("added_links") or []:
-            items.append(f"<li><strong>Change</strong>: {escape(added_link, quote=False)}</li>")
+        added_links = change.get("added_links") or []
+        added_link_targets = change.get("added_link_targets") or []
+        for index, added_link in enumerate(added_links):
+            target_markup = ""
+            if index < len(added_link_targets):
+                target = added_link_targets[index]
+                target_url = ""
+                target_label = ""
+                if isinstance(target, dict):
+                    target_url = target.get("url", "")
+                    target_label = target.get("label") or target_url
+                if not isinstance(target_label, str):
+                    target_label = target_url
+                if isinstance(target_url, str) and urlparse(target_url).scheme in {"http", "https"}:
+                    target_markup = (
+                        f' <a href="{escape(target_url)}">{escape(target_label, quote=False)}</a>'
+                    )
+            items.append(
+                f"<li><strong>Change</strong>: {escape(added_link, quote=False)}{target_markup}</li>"
+            )
     return "".join(items)
+
+
+
+def _render_change_list(
+    changes: list[dict[str, Any]], *, show_no_changes: bool = True, indent: str = "          "
+) -> str:
+    rendered_items = _render_change_items(changes, show_no_changes=show_no_changes)
+    return f"{indent}<ul>{rendered_items}</ul>" if rendered_items else ""
 
 
 
@@ -786,6 +812,7 @@ def _build_history_csv(history: list[dict[str, Any]]) -> str:
             "page_changes",
             "diagnostics",
         ],
+        lineterminator="\n",
     )
     writer.writeheader()
     for entry in history:
@@ -908,7 +935,7 @@ def generate_site_html(
           <p><strong>Checked at:</strong> <span data-checked-at="{escape(latest['checked_at'])}">{escape(_format_timestamp(latest['checked_at']))}</span></p>
           <p><strong>Status:</strong> {_render_status_text(latest['changed'], is_first_check=len(history) == 1)}</p>
           <p><strong>Pages checked:</strong> {latest['page_count']}</p>
-          <ul>{_render_change_items(latest.get('page_changes', []))}</ul>
+{_render_change_list(latest.get('page_changes', []), show_no_changes=False)}
         </section>
         """
     else:
@@ -937,7 +964,7 @@ def generate_site_html(
           <h3 data-checked-at="{escape(entry['checked_at'])}">{_render_history_heading(entry['checked_at'])}</h3>
           <p><strong>Status:</strong> {_render_status_text(entry['changed'], is_first_check=index == 0)}</p>
           <p><strong>Pages checked:</strong> {entry['page_count']}</p>
-          <ul>{_render_change_items(entry.get('page_changes', []))}</ul>
+{_render_change_list(entry.get('page_changes', []), show_no_changes=index != len(history) - 1)}
         </article>
         """
         for index, entry in reversed(list(enumerate(history)))

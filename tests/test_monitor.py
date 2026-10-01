@@ -433,6 +433,7 @@ class MonitorTests(unittest.TestCase):
         )
         self.assertIn("<strong>Status:</strong> First check", index_html)
         self.assertIn("<strong>Pages checked:</strong> 1", index_html)
+        self.assertNotIn("No page changes detected.", index_html)
 
     def test_write_site_files_renders_exact_first_entry_and_hyperlink_change(self):
         history = [
@@ -457,6 +458,12 @@ class MonitorTests(unittest.TestCase):
                         "added_links": [
                             'Addition of hyperlink "GC Meeting - 17 September 2026 Minutes".'
                         ],
+                        "added_link_targets": [
+                            {
+                                "label": "GC Meeting - 17 September 2026 Minutes",
+                                "url": "https://www.cdsdeterminationscommittees.org/documents/2026/09/gc-meeting-17-september-2026-minutes.pdf/",
+                            }
+                        ],
                     }
                 ],
             },
@@ -474,7 +481,9 @@ class MonitorTests(unittest.TestCase):
             index_html,
         )
         self.assertIn(
-            '<li><strong>Change</strong>: Addition of hyperlink "GC Meeting - 17 September 2026 Minutes".</li>',
+            '<li><strong>Change</strong>: Addition of hyperlink "GC Meeting - 17 September 2026 Minutes". '
+            '<a href="https://www.cdsdeterminationscommittees.org/documents/2026/09/gc-meeting-17-september-2026-minutes.pdf/">'
+            "GC Meeting - 17 September 2026 Minutes</a></li>",
             index_html,
         )
 
