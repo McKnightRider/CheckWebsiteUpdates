@@ -781,10 +781,18 @@ def _render_change_items(changes: list[dict[str, Any]], *, show_no_changes: bool
                     target_label = target_url
                 if isinstance(target_url, str) and urlparse(target_url).scheme in {"http", "https"}:
                     target_markup = (
-                        f' <a href="{escape(target_url)}">{escape(target_label, quote=False)}</a>'
+                        f'<a href="{escape(target_url)}">{escape(target_label, quote=False)}</a>'
                     )
+            added_link_markup = escape(added_link, quote=False)
+            escaped_target_label = escape(target_label, quote=False) if target_markup else ""
+            if escaped_target_label and escaped_target_label in added_link_markup:
+                added_link_markup = added_link_markup.replace(
+                    escaped_target_label, target_markup, 1
+                )
+            elif target_markup:
+                added_link_markup += f" {target_markup}"
             items.append(
-                f"<li><strong>Change</strong>: {escape(added_link, quote=False)}{target_markup}</li>"
+                f"<li><strong>Change</strong>: {added_link_markup}</li>"
             )
     return "".join(items)
 
@@ -964,7 +972,7 @@ def generate_site_html(
           <h3 data-checked-at="{escape(entry['checked_at'])}">{_render_history_heading(entry['checked_at'])}</h3>
           <p><strong>Status:</strong> {_render_status_text(entry['changed'], is_first_check=index == 0)}</p>
           <p><strong>Pages checked:</strong> {entry['page_count']}</p>
-{_render_change_list(entry.get('page_changes', []), show_no_changes=index != len(history) - 1)}
+{_render_change_list(entry.get('page_changes', []), show_no_changes=index != 0 and index != len(history) - 1)}
         </article>
         """
         for index, entry in reversed(list(enumerate(history)))
