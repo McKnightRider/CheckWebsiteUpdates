@@ -92,8 +92,8 @@ class MonitorTests(unittest.TestCase):
             ),
         ]
         fetch_inventory_pages_mock.side_effect = [
-            ({"https://example.com": "A"}, {}),
-            ({"https://example.com": "B", "https://example.com/new": "C"}, {}),
+            ({"https://example.com": "A"}, {}, {}),
+            ({"https://example.com": "B", "https://example.com/new": "C"}, {}, {}),
         ]
         append_history_mock.side_effect = lambda history_path, result, limit=100: [result.to_dict()]
 
@@ -133,6 +133,79 @@ class MonitorTests(unittest.TestCase):
             second.page_changes,
             [
                 PageChange(url="https://example.com", change_type="updated"),
+            ],
+        )
+
+    @patch("monitor.send_email_notification")
+    @patch("monitor.send_notification")
+    @patch("monitor.write_site_files")
+    @patch("monitor._append_history")
+    @patch("monitor.fetch_inventory_pages")
+    @patch("monitor.crawl_site")
+    def test_change_detection_reports_added_hyperlinks(
+        self,
+        crawl_site_mock,
+        fetch_inventory_pages_mock,
+        append_history_mock,
+        write_site_files_mock,
+        send_notification_mock,
+        send_email_notification_mock,
+    ):
+        crawl_site_mock.return_value = CrawlResult(
+            content_by_url={"https://example.com": "A"},
+            discovered_urls={"https://example.com"},
+            fetch_failures={},
+        )
+        old_links = {"https://example.com/old.pdf": "Old Minutes"}
+        new_links = {
+            "https://example.com/old.pdf": "Old Minutes",
+            "https://example.com/new.pdf": "GC Meeting - 17 September 2026 Minutes",
+        }
+        fetch_inventory_pages_mock.side_effect = [
+            ({"https://example.com": "A"}, {"https://example.com": old_links}, {}),
+            ({"https://example.com": "B"}, {"https://example.com": new_links}, {}),
+        ]
+        append_history_mock.side_effect = lambda history_path, result, limit=100: [result.to_dict()]
+
+        first_digest = calculate_digest({"https://example.com": "A"})
+        first_page_digests = build_page_digests({"https://example.com": "A"})
+
+        with patch("monitor._write_state") as write_state_mock, patch("monitor._read_state") as read_state_mock:
+            read_state_mock.side_effect = [
+                None,
+                {
+                    "digest": first_digest,
+                    "page_digests": first_page_digests,
+                    "page_links": {"https://example.com": old_links},
+                },
+            ]
+
+            run_monitor_check(
+                start_url="https://example.com",
+                state_path="/tmp/state.json",
+                webhook_url="https://hooks.example.com",
+                history_path="/tmp/history.json",
+                site_output_dir="/tmp/site",
+                email_settings=EmailSettings(),
+            )
+            second = run_monitor_check(
+                start_url="https://example.com",
+                state_path="/tmp/state.json",
+                webhook_url="https://hooks.example.com",
+                history_path="/tmp/history.json",
+                site_output_dir="/tmp/site",
+                email_settings=EmailSettings(),
+            )
+
+        self.assertEqual(write_state_mock.call_count, 2)
+        self.assertEqual(
+            second.page_changes,
+            [
+                PageChange(
+                    url="https://example.com",
+                    change_type="updated",
+                    added_links=('Addition of hyperlink "GC Meeting - 17 September 2026 Minutes".',),
+                ),
             ],
         )
 
@@ -333,7 +406,56 @@ class MonitorTests(unittest.TestCase):
             write_site_files(str(output_dir), "https://example.com", history)
             index_html = (output_dir / "website" / "index.html").read_text(encoding="utf-8")
 
-        self.assertIn("First Check: 1 January 2026 at 12:00:00 AM GMT", index_html)
+        self.assertIn(
+            '<h3 data-checked-at="2026-01-01T00:00:00+00:00">1 January 2026 at 12:00:00 AM GMT</h3>',
+            index_html,
+        )
+        self.assertIn("<strong>Status:</strong> First check", index_html)
+        self.assertIn("<strong>Pages checked:</strong> 1", index_html)
+
+    def test_write_site_files_renders_exact_first_entry_and_hyperlink_change(self):
+        history = [
+            {
+                "checked_at": "2026-09-25T17:58:23+00:00",
+                "changed": False,
+                "current_digest": "same",
+                "previous_digest": None,
+                "page_count": 5,
+                "page_changes": [],
+            },
+            {
+                "checked_at": "2026-09-30T00:13:09+00:00",
+                "changed": True,
+                "current_digest": "new",
+                "previous_digest": "old",
+                "page_count": 5,
+                "page_changes": [
+                    {
+                        "url": "https://www.cdsdeterminationscommittees.org/about-dc-committees",
+                        "change_type": "updated",
+                        "added_links": [
+                            'Addition of hyperlink "GC Meeting - 17 September 2026 Minutes".'
+                        ],
+                    }
+                ],
+            },
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_dir = Path(tmpdir) / "site"
+            write_site_files(str(output_dir), "https://example.com", history)
+            index_html = (output_dir / "website" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn(
+            '<h3 data-checked-at="2026-09-25T17:58:23+00:00">25 September 2026 at 6:58:23 PM BST</h3>\n'
+            '          <p><strong>Status:</strong> First check</p>\n'
+            '          <p><strong>Pages checked:</strong> 5</p>',
+            index_html,
+        )
+        self.assertIn(
+            '<li><strong>Change</strong>: Addition of hyperlink "GC Meeting - 17 September 2026 Minutes".</li>',
+            index_html,
+        )
 
     def test_write_site_files_uses_configured_manual_refresh_url(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -512,6 +634,36 @@ class MonitorTests(unittest.TestCase):
         )
         self.assertEqual(links, {"https://www.example.com/path-a"})
 
+    def test_extract_hyperlinks_returns_absolute_url_to_anchor_text(self):
+        html = """
+        <a href="/documents/gc-meeting-17-september-2026-minutes.pdf">GC Meeting - 17 September 2026 Minutes</a>
+        <a href="#top">Skip to top</a>
+        """
+        links = monitor._extract_hyperlinks(
+            html=html,
+            page_url="https://www.cdsdeterminationscommittees.org/about-dc-committees",
+        )
+        self.assertEqual(
+            links,
+            {
+                "https://www.cdsdeterminationscommittees.org/documents/gc-meeting-17-september-2026-minutes.pdf": "GC Meeting - 17 September 2026 Minutes",
+            },
+        )
+
+    def test_detect_added_hyperlinks_describes_new_links(self):
+        previous_links = {"https://example.com/old.pdf": "Old Minutes"}
+        current_links = {
+            "https://example.com/old.pdf": "Old Minutes",
+            "https://example.com/new.pdf": "GC Meeting - 17 September 2026 Minutes",
+        }
+
+        descriptions = monitor._detect_added_hyperlinks(previous_links, current_links)
+
+        self.assertEqual(
+            descriptions,
+            ['Addition of hyperlink "GC Meeting - 17 September 2026 Minutes".'],
+        )
+
     def test_normalize_url_strips_tracking_query_params(self):
         normalized = monitor._normalize_url(
             "https://www.example.com/path?utm_source=a&z=1&fbclid=abc&y=2",
@@ -556,9 +708,9 @@ class MonitorTests(unittest.TestCase):
             CrawlResult({"https://example.com": "A", "https://example.com/new": "N"}, {"https://example.com", "https://example.com/new"}, {}),
         ]
         fetch_inventory_pages_mock.side_effect = [
-            ({"https://example.com": "A"}, {}),
-            ({"https://example.com": "A"}, {}),
-            ({"https://example.com": "A", "https://example.com/new": "N"}, {}),
+            ({"https://example.com": "A"}, {}, {}),
+            ({"https://example.com": "A"}, {}, {}),
+            ({"https://example.com": "A", "https://example.com/new": "N"}, {}, {}),
         ]
         append_history_mock.side_effect = lambda history_path, result, limit=100: [result.to_dict()]
 

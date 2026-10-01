@@ -151,6 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
 class PageChange:
     url: str
     change_type: str
+    added_links: tuple[str, ...] = ()
 
 
 @dataclass
@@ -358,6 +359,32 @@ def _normalize_text(html: str) -> str:
 
 
 
+def _extract_hyperlinks(html: str, page_url: str) -> Dict[str, str]:
+    """Return a mapping of absolute hyperlink URL to its human-readable anchor text."""
+    soup = BeautifulSoup(html, "html.parser")
+    links: Dict[str, str] = {}
+    for anchor in soup.find_all("a", href=True):
+        href = anchor["href"].strip()
+        if not href or href.startswith("#"):
+            continue
+        absolute_href = urljoin(page_url, href)
+        text = re.sub(r"\s+", " ", anchor.get_text(" ", strip=True)).strip()
+        if absolute_href not in links or (text and not links[absolute_href]):
+            links[absolute_href] = text
+    return links
+
+
+
+def _detect_added_hyperlinks(previous_links: Dict[str, str], current_links: Dict[str, str]) -> list[str]:
+    """Describe hyperlinks present in current_links but absent from previous_links."""
+    descriptions: list[str] = []
+    for href in sorted(set(current_links) - set(previous_links)):
+        label = current_links[href].strip() or href
+        descriptions.append(f'Addition of hyperlink "{label}".')
+    return descriptions
+
+
+
 def _fetch_html_with_retries(
     session: requests.Session,
     url: str,
@@ -500,9 +527,10 @@ def fetch_inventory_pages(
     timeout: int = 20,
     retries: int = DEFAULT_FETCH_RETRIES,
     backoff_seconds: float = DEFAULT_FETCH_BACKOFF_SECONDS,
-) -> tuple[Dict[str, str], dict[str, str]]:
+) -> tuple[Dict[str, str], Dict[str, Dict[str, str]], dict[str, str]]:
     session = requests.Session()
     content_by_url: Dict[str, str] = {}
+    links_by_url: Dict[str, Dict[str, str]] = {}
     failures: dict[str, str] = {}
     total_urls = len(inventory_urls)
     logger.info("Fetching %d inventory pages", total_urls)
@@ -518,6 +546,7 @@ def fetch_inventory_pages(
             failures[url] = error or "unknown fetch error"
         else:
             content_by_url[url] = _normalize_text(html)
+            links_by_url[url] = _extract_hyperlinks(html, url)
         if index == 1 or index % 25 == 0 or index == total_urls:
             logger.info(
                 "Inventory fetch progress: processed=%d/%d successes=%d failures=%d",
@@ -526,7 +555,7 @@ def fetch_inventory_pages(
                 len(content_by_url),
                 len(failures),
             )
-    return content_by_url, failures
+    return content_by_url, links_by_url, failures
 
 
 
@@ -627,12 +656,14 @@ def _write_state(
     canonical_urls: set[str],
     pending_added: dict[str, int],
     pending_removed: dict[str, int],
+    page_links: Optional[Dict[str, Dict[str, str]]] = None,
 ) -> None:
     _atomic_write_json(
         state_path,
         {
             "digest": digest,
             "page_digests": page_digests,
+            "page_links": page_links or {},
             "canonical_urls": sorted(canonical_urls),
             "pending_added": pending_added,
             "pending_removed": pending_removed,
@@ -704,7 +735,7 @@ def _format_timestamp(timestamp: str) -> str:
 
 
 
-def _render_change_items(changes: list[dict[str, str]]) -> str:
+def _render_change_items(changes: list[dict[str, Any]]) -> str:
     if not changes:
         return "<li>No page changes detected.</li>"
 
@@ -717,6 +748,8 @@ def _render_change_items(changes: list[dict[str, str]]) -> str:
             items.append(f'<li><strong>{change_type}</strong>: <a href="{url}">{url}</a></li>')
         else:
             items.append(f"<li><strong>{change_type}</strong>: {url}</li>")
+        for added_link in change.get("added_links") or []:
+            items.append(f"<li><strong>Change</strong>: {escape(added_link, quote=False)}</li>")
     return "".join(items)
 
 
@@ -754,11 +787,15 @@ def _build_history_csv(history: list[dict[str, Any]]) -> str:
 
 
 
-def _render_history_heading(checked_at: str, *, is_first_check: bool = False) -> str:
-    timestamp = escape(_format_timestamp(checked_at))
+def _render_history_heading(checked_at: str) -> str:
+    return escape(_format_timestamp(checked_at))
+
+
+
+def _render_status_text(changed: bool, *, is_first_check: bool = False) -> str:
     if is_first_check:
-        return f"First Check: {timestamp}"
-    return timestamp
+        return "First check"
+    return "Changes detected" if changed else "No changes detected"
 
 
 
@@ -851,7 +888,7 @@ def generate_site_html(
         <section class=\"card\">
           <h2>Latest check</h2>
           <p><strong>Checked at:</strong> <span data-checked-at="{escape(latest['checked_at'])}">{escape(_format_timestamp(latest['checked_at']))}</span></p>
-          <p><strong>Status:</strong> {'Changes detected' if latest['changed'] else 'No changes detected'}</p>
+          <p><strong>Status:</strong> {_render_status_text(latest['changed'], is_first_check=len(history) == 1)}</p>
           <p><strong>Pages checked:</strong> {latest['page_count']}</p>
           <ul>{_render_change_items(latest.get('page_changes', []))}</ul>
         </section>
@@ -879,13 +916,13 @@ def generate_site_html(
     history_markup = "".join(
         f"""
         <article class=\"card history-item\">
-          <h3 data-checked-at="{escape(entry['checked_at'])}">{_render_history_heading(entry['checked_at'], is_first_check=len(history) == 1)}</h3>
-          <p><strong>Status:</strong> {'Changes detected' if entry['changed'] else 'No changes detected'}</p>
+          <h3 data-checked-at="{escape(entry['checked_at'])}">{_render_history_heading(entry['checked_at'])}</h3>
+          <p><strong>Status:</strong> {_render_status_text(entry['changed'], is_first_check=index == 0)}</p>
           <p><strong>Pages checked:</strong> {entry['page_count']}</p>
           <ul>{_render_change_items(entry.get('page_changes', []))}</ul>
         </article>
         """
-        for entry in reversed(history)
+        for index, entry in reversed(list(enumerate(history)))
     ) or "<p>No checks have run yet.</p>"
 
     return f"""<!DOCTYPE html>
@@ -988,12 +1025,19 @@ def write_site_files(
 
 
 
+def _describe_page_change(change: PageChange) -> str:
+    description = f"{change.change_type}: {change.url}"
+    if change.added_links:
+        description += " (" + "; ".join(change.added_links) + ")"
+    return description
+
+
 def send_notification(webhook_url: str, result: MonitorResult) -> None:
     if not webhook_url:
         logger.info("Change detected but NOTIFICATION_WEBHOOK_URL is not configured")
         return
 
-    changed_pages = "; ".join(f"{change.change_type}: {change.url}" for change in result.page_changes)
+    changed_pages = "; ".join(_describe_page_change(change) for change in result.page_changes)
     if not changed_pages:
         changed_pages = "No page details available"
 
@@ -1023,7 +1067,12 @@ def send_email_notification(email_settings: EmailSettings, result: MonitorResult
     message["From"] = email_settings.from_address
     message["To"] = email_settings.to_address
 
-    page_lines = "\n".join(f"- {change.change_type.title()}: {change.url}" for change in result.page_changes)
+    page_lines_parts = []
+    for change in result.page_changes:
+        page_lines_parts.append(f"- {change.change_type.title()}: {change.url}")
+        for added_link in change.added_links:
+            page_lines_parts.append(f"  Change: {added_link}")
+    page_lines = "\n".join(page_lines_parts)
     if not page_lines:
         page_lines = "- A change was detected, but no page details were captured."
 
@@ -1064,6 +1113,7 @@ def run_monitor_check(
         previous_state = _read_state(state_path) or {}
         previous_digest = previous_state.get("digest")
         previous_page_digests = previous_state.get("page_digests") or {}
+        previous_page_links = previous_state.get("page_links") or {}
         diagnostics: list[str] = []
 
         normalized_start_url = _normalize_url(start_url)
@@ -1073,7 +1123,7 @@ def run_monitor_check(
         pending_removed: dict[str, int] = {}
         diagnostics.append(f"Monitoring configured pages only ({len(inventory_urls)} URLs).")
 
-        inventory_contents, inventory_failures = fetch_inventory_pages(inventory_urls=inventory_urls)
+        inventory_contents, inventory_links, inventory_failures = fetch_inventory_pages(inventory_urls=inventory_urls)
         if inventory_failures:
             diagnostics.append(
                 f"Inventory fetch failures: {', '.join(sorted(inventory_failures)[:10])}"
@@ -1086,6 +1136,13 @@ def run_monitor_check(
             effective_page_digests.pop(removed_url, None)
         for stale_url in set(effective_page_digests) - inventory_urls:
             effective_page_digests.pop(stale_url, None)
+
+        effective_page_links = dict(previous_page_links)
+        effective_page_links.update(inventory_links)
+        for removed_url in set(previous_page_links) - inventory_urls:
+            effective_page_links.pop(removed_url, None)
+        for stale_url in set(effective_page_links) - inventory_urls:
+            effective_page_links.pop(stale_url, None)
 
         comparable_urls = {url for url in inventory_urls if url in previous_page_digests}
         comparable_current_digests = {
@@ -1101,7 +1158,16 @@ def run_monitor_check(
         current_digest = calculate_digest_from_page_digests(comparable_current_digests)
         previous_comparable_digest = calculate_digest_from_page_digests(comparable_previous_digests)
         page_changes = [
-            PageChange(url=url, change_type="updated")
+            PageChange(
+                url=url,
+                change_type="updated",
+                added_links=tuple(
+                    _detect_added_hyperlinks(
+                        previous_page_links.get(url, {}),
+                        inventory_links.get(url, {}),
+                    )
+                ),
+            )
             for url in sorted(successful_page_digests)
             if previous_page_digests.get(url) and previous_page_digests[url] != successful_page_digests[url]
         ]
@@ -1114,6 +1180,7 @@ def run_monitor_check(
             canonical_urls=inventory_urls,
             pending_added=pending_added,
             pending_removed=pending_removed,
+            page_links=effective_page_links,
         )
 
         result = MonitorResult(
