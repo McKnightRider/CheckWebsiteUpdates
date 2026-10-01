@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import monitor
 import requests
+import yaml
 
 from monitor import (
     CrawlResult,
@@ -253,14 +254,15 @@ class MonitorTests(unittest.TestCase):
             / "workflows"
             / "monitor-pages.yml"
         )
-        workflow_text = workflow_path.read_text(encoding="utf-8")
-        trigger_section = workflow_text.split("\nconcurrency:", 1)[0]
+        workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+        # PyYAML 1.1 parses the unquoted "on:" key as the boolean True.
+        triggers = workflow.get("on", workflow.get(True))
 
-        self.assertIn("workflow_dispatch:", trigger_section)
-        self.assertIn("schedule:", trigger_section)
+        self.assertIn("workflow_dispatch", triggers)
+        self.assertIn("schedule", triggers)
         self.assertNotIn(
-            "push:",
-            trigger_section,
+            "push",
+            triggers,
             "The monitor workflow must not run on code pushes; emails should only be "
             "triggered by real DC website changes, not GitHub code/deployment events.",
         )
