@@ -129,7 +129,16 @@
     "page_changes": [
       {
         "url": "https://www.cdsdeterminationscommittees.org/governance-committee",
-        "change_type": "updated"
+        "change_type": "updated",
+        "added_links": [
+          "Addition of hyperlink \"GC Meeting - 17 September 2026 Minutes\"."
+        ],
+        "added_link_targets": [
+          {
+            "label": "GC Meeting - 17 September 2026 Minutes",
+            "url": "https://www.cdsdeterminationscommittees.org/documents/2026/09/gc-meeting-17-september-2026-minutes.pdf/"
+          }
+        ]
       }
     ],
     "diagnostics": [
