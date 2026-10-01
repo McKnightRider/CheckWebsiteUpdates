@@ -246,6 +246,25 @@ class MonitorTests(unittest.TestCase):
 
         smtp_mock.assert_not_called()
 
+    def test_monitor_workflow_only_triggers_on_schedule_or_manual_dispatch(self):
+        workflow_path = (
+            Path(__file__).resolve().parent.parent
+            / ".github"
+            / "workflows"
+            / "monitor-pages.yml"
+        )
+        workflow_text = workflow_path.read_text(encoding="utf-8")
+        trigger_section = workflow_text.split("\nconcurrency:", 1)[0]
+
+        self.assertIn("workflow_dispatch:", trigger_section)
+        self.assertIn("schedule:", trigger_section)
+        self.assertNotIn(
+            "push:",
+            trigger_section,
+            "The monitor workflow must not run on code pushes; emails should only be "
+            "triggered by real DC website changes, not GitHub code/deployment events.",
+        )
+
     def test_write_site_files_outputs_html_and_history(self):
         history = [
             {

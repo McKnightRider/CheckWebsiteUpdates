@@ -73,7 +73,7 @@ By default, checks and notifications are limited to these pages:
 
 The repository includes a GitHub Actions workflow that:
 
-- runs on a 12-hour schedule, on manual dispatch, and on pushes to `main`
+- runs on a 12-hour schedule and on manual dispatch (it no longer runs on every push to `main`, so email notifications are tied to real DC website changes rather than code changes)
 - generates the static GitHub Pages site in `site/website/`
 - copies the generated HTML, CSS, JavaScript, JSON, and CSV files into the repository's top-level `website/` folder
 - saves the rendered history data in `site/website/history.csv`
