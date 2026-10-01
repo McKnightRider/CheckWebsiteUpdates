@@ -11,7 +11,7 @@
       <section class="card">
         <h1>DC Website Update Monitor</h1>
         <p>This site tracks checks against selected CDS Determinations Committee pages.</p>
-        <ul><li><a href="https://www.cdsdeterminationscommittees.org">https://www.cdsdeterminationscommittees.org</a></li></ul>
+        <ul><li><a href="https://www.cdsdeterminationscommittees.org">https://www.cdsdeterminationscommittees.org</a></li><li><a href="https://www.cdsdeterminationscommittees.org/credit-default-swaps-management">https://www.cdsdeterminationscommittees.org/credit-default-swaps-management</a></li><li><a href="https://www.cdsdeterminationscommittees.org/about-dc-committees">https://www.cdsdeterminationscommittees.org/about-dc-committees</a></li><li><a href="https://www.cdsdeterminationscommittees.org/dc-rules">https://www.cdsdeterminationscommittees.org/dc-rules</a></li><li><a href="https://www.cdsdeterminationscommittees.org/governance-committee">https://www.cdsdeterminationscommittees.org/governance-committee</a></li></ul>
         <ul class="resource-list">
           <li><a href="history.csv">Download history spreadsheet</a></li>
           <li><a href="history.json">Download history JSON</a></li>
@@ -20,14 +20,15 @@
       <section class="card">
         <h2>Manual refresh</h2>
         
-        <p class="refresh-help">Manual refresh is available from this repository's GitHub Actions workflow after the site is built in GitHub.</p>
-        <p id="refresh-status" class="refresh-status" aria-live="polite">Open the repository Actions tab and run the monitor workflow to refresh the site.</p>
+        <p class="refresh-help">To run an immediate check, open the GitHub Actions workflow and click <strong>Run workflow</strong>. You must be signed in with permission to run workflows for this repository.</p>
+        <p><a id="refresh-button" class="refresh-link" href="https://github.com/McKnightRider/CheckWebsiteUpdates/actions/workflows/monitor-pages.yml" target="_blank" rel="noopener noreferrer">Open Run workflow</a></p>
+        <p id="refresh-status" class="refresh-status" aria-live="polite">After the workflow finishes, reload this page to see the latest site output.</p>
         
       </section>
       
         <section class="card">
           <h2>Latest check</h2>
-          <p><strong>Checked at:</strong> <span data-checked-at="2026-10-01T13:59:04.649678+00:00">1 October 2026 at 2:59:04 PM BST</span></p>
+          <p><strong>Checked at:</strong> <span data-checked-at="2026-10-01T14:06:37.115663+00:00">1 October 2026 at 3:06:37 PM BST</span></p>
           <p><strong>Status:</strong> No changes detected</p>
           <p><strong>Pages checked:</strong> 5</p>
 
@@ -37,10 +38,17 @@
         <h2>Recent checks (<span id="history-count">0</span>)</h2>
         
         <article class="card history-item">
-          <h3 data-checked-at="2026-10-01T13:59:04.649678+00:00">1 October 2026 at 2:59:04 PM BST</h3>
+          <h3 data-checked-at="2026-10-01T14:06:37.115663+00:00">1 October 2026 at 3:06:37 PM BST</h3>
           <p><strong>Status:</strong> No changes detected</p>
           <p><strong>Pages checked:</strong> 5</p>
 
+        </article>
+        
+        <article class="card history-item">
+          <h3 data-checked-at="2026-10-01T13:59:04.649678+00:00">1 October 2026 at 2:59:04 PM BST</h3>
+          <p><strong>Status:</strong> No changes detected</p>
+          <p><strong>Pages checked:</strong> 5</p>
+          <ul><li>No page changes detected.</li></ul>
         </article>
         
         <article class="card history-item">
