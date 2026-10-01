@@ -481,11 +481,12 @@ class MonitorTests(unittest.TestCase):
             index_html,
         )
         self.assertIn(
-            '<li><strong>Change</strong>: Addition of hyperlink "GC Meeting - 17 September 2026 Minutes". '
-            '<a href="https://www.cdsdeterminationscommittees.org/documents/2026/09/gc-meeting-17-september-2026-minutes.pdf/">'
-            "GC Meeting - 17 September 2026 Minutes</a></li>",
+            '<li><strong>Change</strong>: Addition of hyperlink "<a href="'
+            "https://www.cdsdeterminationscommittees.org/documents/2026/09/gc-meeting-17-september-2026-minutes.pdf/"
+            '">GC Meeting - 17 September 2026 Minutes</a>".</li>',
             index_html,
         )
+        self.assertNotIn("<ul><li>No page changes detected.</li></ul>", index_html)
 
     def test_write_site_files_uses_configured_manual_refresh_url(self):
         with tempfile.TemporaryDirectory() as tmpdir:
