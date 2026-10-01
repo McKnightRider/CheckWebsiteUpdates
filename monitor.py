@@ -18,7 +18,7 @@ from email.message import EmailMessage
 from functools import lru_cache
 from html import escape
 from pathlib import Path
-from typing import Any, Dict, Optional, TextIO
+from typing import Any, Dict, Optional, TextIO, TypeVar
 from urllib.parse import parse_qsl, urlencode, urldefrag, urljoin, urlparse
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -387,8 +387,14 @@ def _detect_added_hyperlinks(previous_links: Dict[str, str], current_links: Dict
 
 
 
-def _merge_and_prune(previous: Dict[str, Any], current: Dict[str, Any], valid_urls: set[str]) -> Dict[str, Any]:
-    """Merge newly fetched per-page data onto previous state, dropping URLs no longer monitored."""
+_PageDataT = TypeVar("_PageDataT")
+
+
+def _merge_and_prune(
+    previous: Dict[str, _PageDataT], current: Dict[str, _PageDataT], valid_urls: set[str]
+) -> Dict[str, _PageDataT]:
+    """Merge newly fetched per-page data (digests or hyperlinks) onto previous state,
+    dropping URLs no longer monitored."""
     merged = dict(previous)
     merged.update(current)
     for stale_url in set(merged) - valid_urls:
