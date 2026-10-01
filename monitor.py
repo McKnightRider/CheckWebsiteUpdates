@@ -369,6 +369,8 @@ def _extract_hyperlinks(html: str, page_url: str) -> Dict[str, str]:
             continue
         absolute_href = urljoin(page_url, href)
         text = re.sub(r"\s+", " ", anchor.get_text(" ", strip=True)).strip()
+        # Prefer the first non-empty anchor text seen for a given href, but allow a
+        # later anchor with real text to replace an earlier placeholder/empty one.
         if absolute_href not in links or (text and not links[absolute_href]):
             links[absolute_href] = text
     return links
@@ -382,6 +384,16 @@ def _detect_added_hyperlinks(previous_links: Dict[str, str], current_links: Dict
         label = current_links[href].strip() or href
         descriptions.append(f'Addition of hyperlink "{label}".')
     return descriptions
+
+
+
+def _merge_and_prune(previous: Dict[str, Any], current: Dict[str, Any], valid_urls: set[str]) -> Dict[str, Any]:
+    """Merge newly fetched per-page data onto previous state, dropping URLs no longer monitored."""
+    merged = dict(previous)
+    merged.update(current)
+    for stale_url in set(merged) - valid_urls:
+        merged.pop(stale_url, None)
+    return merged
 
 
 
@@ -1130,19 +1142,8 @@ def run_monitor_check(
             )
 
         successful_page_digests = build_page_digests(inventory_contents)
-        effective_page_digests = dict(previous_page_digests)
-        effective_page_digests.update(successful_page_digests)
-        for removed_url in set(previous_page_digests) - inventory_urls:
-            effective_page_digests.pop(removed_url, None)
-        for stale_url in set(effective_page_digests) - inventory_urls:
-            effective_page_digests.pop(stale_url, None)
-
-        effective_page_links = dict(previous_page_links)
-        effective_page_links.update(inventory_links)
-        for removed_url in set(previous_page_links) - inventory_urls:
-            effective_page_links.pop(removed_url, None)
-        for stale_url in set(effective_page_links) - inventory_urls:
-            effective_page_links.pop(stale_url, None)
+        effective_page_digests = _merge_and_prune(previous_page_digests, successful_page_digests, inventory_urls)
+        effective_page_links = _merge_and_prune(previous_page_links, inventory_links, inventory_urls)
 
         comparable_urls = {url for url in inventory_urls if url in previous_page_digests}
         comparable_current_digests = {
