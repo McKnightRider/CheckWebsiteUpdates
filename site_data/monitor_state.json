@@ -1,11 +1,11 @@
 {
-  "digest": "868a65a91fd28dd8c341628d9cc7bf1d1daa6131efa5c168861de562c02d44bb",
+  "digest": "e5ceeb8d1274f8624ee357c097ee331f712759c28488ad9c8eca8d3cab94d64f",
   "page_digests": {
-    "https://www.cdsdeterminationscommittees.org": "c7f814f37aa2bac246919483e9f1b9ba201c7c4af510d3e9b6138cb72269c856",
-    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "a3cb5ac9f0cf2539cceff3ae0cec8e037051a779092a2b672fe53c41af91b9ef",
-    "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": "f81bc29844a6da30d58e97b5c1fc713d88c466b19a2e835af0805c13a7f6be88",
-    "https://www.cdsdeterminationscommittees.org/dc-rules": "19f96faa88a438577a4cc4694414725b2fec8b4060372a817f6d998315db06cd",
-    "https://www.cdsdeterminationscommittees.org/governance-committee": "10bd8afca9a5a205fbbb946ffae6927ccd3ed5efd3e1154a31f0f90329e3a053"
+    "https://www.cdsdeterminationscommittees.org": "45b26b6d02bf29749468001143728e653f3716bdf57c471278d8c6f8a69adaf8",
+    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "b736031d235108ace7f11e2c26e9ae290f14fe05a6fe6554150327a8ba5efe32",
+    "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": "6d56669d59333f8489c843bc5b3899af68ce1b1d14592123f980eaf7ee6ab064",
+    "https://www.cdsdeterminationscommittees.org/dc-rules": "4fb6328132622020c4b8df6d7301144de1703eacdcae12d6849de7c61f19b133",
+    "https://www.cdsdeterminationscommittees.org/governance-committee": "f12423e75d099baf2015e811aff11753bae73b39ee03a4200a0f4ecdcb7e2d71"
   },
   "page_links": {
     "https://www.cdsdeterminationscommittees.org": {
@@ -18,6 +18,7 @@
       "https://www.cdsdeterminationscommittees.org/sropob-resolutions/": "SRO/POB Resolutions",
       "https://www.cdsdeterminationscommittees.org/governance-committee/": "Governance Committee",
       "https://www.cdsdeterminationscommittees.org/submit-a-request/": "Submit a Request",
+      "https://www.cdsdeterminationscommittees.org/privacy-notice/": "Privacy notice",
       "http://www.cdsdeterminationscommittees.org/dc-rules/": "Determinations Committees Rules",
       "http://www.creditfixings.com/CreditEventAuctions/fixings.jsp": "Auction Results",
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
@@ -35,6 +36,7 @@
       "https://www.cdsdeterminationscommittees.org/sropob-resolutions/": "SRO/POB Resolutions",
       "https://www.cdsdeterminationscommittees.org/governance-committee/": "Governance Committee",
       "https://www.cdsdeterminationscommittees.org/submit-a-request/": "Submit a Request",
+      "https://www.cdsdeterminationscommittees.org/privacy-notice/": "Privacy notice",
       "https://www.cdsdeterminationscommittees.org/current-dc-members-effective-as-of-april-29-2026/": "Americas",
       "http://www.cdsdeterminationscommittees.org/dc-rules/": "Determinations Committees Rules",
       "http://www.cdsdeterminationscommittees.org/contact/": "contact us",
@@ -81,6 +83,7 @@
       "https://www.cdsdeterminationscommittees.org/sropob-resolutions/": "SRO/POB Resolutions",
       "https://www.cdsdeterminationscommittees.org/governance-committee/": "Governance Committee",
       "https://www.cdsdeterminationscommittees.org/submit-a-request/": "Submit a Request",
+      "https://www.cdsdeterminationscommittees.org/privacy-notice/": "Privacy notice",
       "https://www.cdsdeterminationscommittees.org/feed/dc_requests_feed/": "Subscribe",
       "https://www.cdsdeterminationscommittees.org/committee/americas/": "Americas",
       "https://www.cdsdeterminationscommittees.org/committee/asia-ex-japan/": "Asia Ex-Japan",
@@ -98,6 +101,7 @@
       "https://www.cdsdeterminationscommittees.org/sropob-resolutions/": "SRO/POB Resolutions",
       "https://www.cdsdeterminationscommittees.org/governance-committee/": "Governance Committee",
       "https://www.cdsdeterminationscommittees.org/submit-a-request/": "Submit a Request",
+      "https://www.cdsdeterminationscommittees.org/privacy-notice/": "Privacy notice",
       "https://www.cdsdeterminationscommittees.org/documents/2022/04/dc-secretary-contact-details.pdf/": "DC Secretary contact details",
       "https://www.cdsdeterminationscommittees.org/wp-content/files_mf/1790082652SummaryofDCAdminRuleChanges.pdf": "Proposed amendments to DC Rules - 22 September 2026",
       "https://www.cdsdeterminationscommittees.org/wp-content/files_mf/1787312461ProposedAmendmentstoDCRules1199508767.10April2026.pdf": "Proposed amendments to DC Rules - April 2026 Draft",
@@ -184,6 +188,7 @@
       "https://www.cdsdeterminationscommittees.org/sropob-resolutions/": "SRO/POB Resolutions",
       "https://www.cdsdeterminationscommittees.org/governance-committee/": "Governance Committee",
       "https://www.cdsdeterminationscommittees.org/submit-a-request/": "Submit a Request",
+      "https://www.cdsdeterminationscommittees.org/privacy-notice/": "Privacy notice",
       "https://www.cdsdeterminationscommittees.org/documents/2026/03/gc-charter-february-2026-version.pdf/": "Current version (in force from 12 February 2026)",
       "https://www.cdsdeterminationscommittees.org/wp-content/files_mf/1753213620DCGovernanceCommitteeCharter.pdf": "Original version",
       "https://www.cdsdeterminationscommittees.org/documents/2026/03/gc-charter-redline-of-original-vs-february-2026-version.pdf/": "Redline of current version vs original version",
@@ -216,5 +221,5 @@
   ],
   "pending_added": {},
   "pending_removed": {},
-  "updated_at": "2026-10-02T00:13:08.780935+00:00"
+  "updated_at": "2026-10-02T12:07:19.654958+00:00"
 }
