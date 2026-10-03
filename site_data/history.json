@@ -268,5 +268,42 @@
     "diagnostics": [
       "Monitoring configured pages only (5 URLs)."
     ]
+  },
+  {
+    "checked_at": "2026-10-03T00:12:57.704490+00:00",
+    "changed": true,
+    "current_digest": "d8ca54f2bd05c086e076f7bfee07d013ba6510ba376b6661025e5978c54557c3",
+    "previous_digest": "e5ceeb8d1274f8624ee357c097ee331f712759c28488ad9c8eca8d3cab94d64f",
+    "page_count": 5,
+    "page_changes": [
+      {
+        "url": "https://www.cdsdeterminationscommittees.org",
+        "change_type": "updated",
+        "added_links": []
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/about-dc-committees",
+        "change_type": "updated",
+        "added_links": []
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management",
+        "change_type": "updated",
+        "added_links": []
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/dc-rules",
+        "change_type": "updated",
+        "added_links": []
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/governance-committee",
+        "change_type": "updated",
+        "added_links": []
+      }
+    ],
+    "diagnostics": [
+      "Monitoring configured pages only (5 URLs)."
+    ]
   }
 ]
