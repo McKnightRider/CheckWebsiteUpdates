@@ -1,11 +1,11 @@
 {
-  "digest": "b652ee5df3e83207ee634c3c7a6c7155ed453b275c80f89f721e48b07f67d2ec",
+  "digest": "ad404c0a31c4864e901290e69ef456d1ced7bcf9ac4ca17c2b63017c2eba9729",
   "page_digests": {
-    "https://www.cdsdeterminationscommittees.org": "b72ef0bc0742c25e2c4c33a89b1aba5c70e6dc2f8e52cad047ddcdad649b3166",
-    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "ccc414bd1a1f93610d410ebd52800fab025ab2aba903e00651701dc8562ba0de",
+    "https://www.cdsdeterminationscommittees.org": "4bccd28a4cd831e34c28e8804b265a739552815d1ae8a17d44d0b9ad1eeaccda",
+    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "98046ce40d6a0b623cf21cfcf91ddba491124d949281df195929a64b1b0e50a6",
     "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": "bbd18974aaac8b7805f6e25d68e291aecabf8f180a06f6b416b5efca3c1a5caa",
     "https://www.cdsdeterminationscommittees.org/dc-rules": "28b33ff89c491cdfb88dccf953b27ab11144c297020a6358ca3b14d2b692531b",
-    "https://www.cdsdeterminationscommittees.org/governance-committee": "d5807520f0725a2b9fdd9434a28bf3013e98cfde66ff5f651b4ef3c8947d4521"
+    "https://www.cdsdeterminationscommittees.org/governance-committee": "e255c7e392a78b4937fe2b3b31c5f2db4160d17388da183e06020ab39e6f73d4"
   },
   "page_links": {
     "https://www.cdsdeterminationscommittees.org": {
@@ -25,7 +25,8 @@
       "https://www.cdsdeterminationscommittees.org/current-dc-members-effective-as-of-april-29-2026/": "DC Members from April 2026 to April 2027",
       "https://www.cdsdeterminationscommittees.org/dc-rules/": "DC Rules",
       "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://www.cdsdeterminationscommittees.org/cds/discovery-global-holdings-inc/": "Discovery Global Holdings, Inc."
+      "https://www.cdsdeterminationscommittees.org/cds/discovery-global-holdings-inc/": "Discovery Global Holdings, Inc.",
+      "https://www.cdsdeterminationscommittees.org/cds/picard-bondco-s-a/": "Picard Bondco S.A."
     },
     "https://www.cdsdeterminationscommittees.org/about-dc-committees": {
       "https://www.cdsdeterminationscommittees.org/contact/": "Contact",
@@ -73,7 +74,8 @@
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/dc-rules/": "DC Rules",
       "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://www.cdsdeterminationscommittees.org/cds/discovery-global-holdings-inc/": "Discovery Global Holdings, Inc."
+      "https://www.cdsdeterminationscommittees.org/cds/discovery-global-holdings-inc/": "Discovery Global Holdings, Inc.",
+      "https://www.cdsdeterminationscommittees.org/cds/picard-bondco-s-a/": "Picard Bondco S.A."
     },
     "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": {
       "https://www.cdsdeterminationscommittees.org/contact/": "Contact",
@@ -212,7 +214,8 @@
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/current-dc-members-effective-as-of-april-29-2026/": "DC Members from April 2026 to April 2027",
       "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://www.cdsdeterminationscommittees.org/cds/discovery-global-holdings-inc/": "Discovery Global Holdings, Inc."
+      "https://www.cdsdeterminationscommittees.org/cds/discovery-global-holdings-inc/": "Discovery Global Holdings, Inc.",
+      "https://www.cdsdeterminationscommittees.org/cds/picard-bondco-s-a/": "Picard Bondco S.A."
     }
   },
   "canonical_urls": [
@@ -224,5 +227,5 @@
   ],
   "pending_added": {},
   "pending_removed": {},
-  "updated_at": "2026-10-14T00:11:20.684450+00:00"
+  "updated_at": "2026-10-14T12:07:05.116379+00:00"
 }
