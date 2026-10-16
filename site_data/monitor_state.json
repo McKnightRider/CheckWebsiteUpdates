@@ -1,11 +1,11 @@
 {
-  "digest": "fa7f8f5dbcb7ffc87fc6025f64262d345cb47bce2a109c7ed68dfbfb8a60a70e",
+  "digest": "68bc514991900a1acfbdbe2324602f83b7e65d88f9b01e821811c5177ab13c45",
   "page_digests": {
-    "https://www.cdsdeterminationscommittees.org": "7b16c80ad473e9362955de4a99a681052474a9c0df5ed44c3936aeb0e1e7529d",
-    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "037c5e754df61a4358184d13df7443a864f0095ca0babdb3bc0f6f961bd5f835",
+    "https://www.cdsdeterminationscommittees.org": "7fa92b1a43e988016b1682eeec9a85d319da81710597004cf56716077d3d3b29",
+    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "b0dd2a1d70f3e55246dbccebae7c3f27ff8fb0edaf1cd6da0d2f808a7148afce",
     "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": "bbd18974aaac8b7805f6e25d68e291aecabf8f180a06f6b416b5efca3c1a5caa",
     "https://www.cdsdeterminationscommittees.org/dc-rules": "28b33ff89c491cdfb88dccf953b27ab11144c297020a6358ca3b14d2b692531b",
-    "https://www.cdsdeterminationscommittees.org/governance-committee": "82b9016482d9c54a68e250269c59d2883a2072e504d0c26ed0cbcc3e29ae8927"
+    "https://www.cdsdeterminationscommittees.org/governance-committee": "e6915b8dd7af34f895929e991b854b9bee17f631a7e1a27c3a0d3211df81c918"
   },
   "page_links": {
     "https://www.cdsdeterminationscommittees.org": {
@@ -224,5 +224,5 @@
   ],
   "pending_added": {},
   "pending_removed": {},
-  "updated_at": "2026-10-16T00:10:47.525751+00:00"
+  "updated_at": "2026-10-16T12:07:04.067382+00:00"
 }
