@@ -640,5 +640,32 @@
     "diagnostics": [
       "Monitoring configured pages only (5 URLs)."
     ]
+  },
+  {
+    "checked_at": "2026-10-16T00:10:47.548382+00:00",
+    "changed": true,
+    "current_digest": "fa7f8f5dbcb7ffc87fc6025f64262d345cb47bce2a109c7ed68dfbfb8a60a70e",
+    "previous_digest": "83d0bda2fd442ae2cd7988beca0afeb03c0770b2552e6b44e69600ef17f1b415",
+    "page_count": 5,
+    "page_changes": [
+      {
+        "url": "https://www.cdsdeterminationscommittees.org",
+        "change_type": "updated",
+        "added_links": []
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/about-dc-committees",
+        "change_type": "updated",
+        "added_links": []
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/governance-committee",
+        "change_type": "updated",
+        "added_links": []
+      }
+    ],
+    "diagnostics": [
+      "Monitoring configured pages only (5 URLs)."
+    ]
   }
 ]
