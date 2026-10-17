@@ -694,5 +694,38 @@
     "diagnostics": [
       "Monitoring configured pages only (5 URLs)."
     ]
+  },
+  {
+    "checked_at": "2026-10-17T00:11:01.741118+00:00",
+    "changed": true,
+    "current_digest": "4b66a01e5bf563a8197be43d676e1aeb7699aad827804d13f7734a6019e676c5",
+    "previous_digest": "68bc514991900a1acfbdbe2324602f83b7e65d88f9b01e821811c5177ab13c45",
+    "page_count": 5,
+    "page_changes": [
+      {
+        "url": "https://www.cdsdeterminationscommittees.org",
+        "change_type": "updated",
+        "added_links": [
+          "Addition of hyperlink \"Discovery Global Holdings, Inc.\"."
+        ]
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/about-dc-committees",
+        "change_type": "updated",
+        "added_links": [
+          "Addition of hyperlink \"Discovery Global Holdings, Inc.\"."
+        ]
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/governance-committee",
+        "change_type": "updated",
+        "added_links": [
+          "Addition of hyperlink \"Discovery Global Holdings, Inc.\"."
+        ]
+      }
+    ],
+    "diagnostics": [
+      "Monitoring configured pages only (5 URLs)."
+    ]
   }
 ]
