@@ -1,11 +1,11 @@
 {
-  "digest": "4b66a01e5bf563a8197be43d676e1aeb7699aad827804d13f7734a6019e676c5",
+  "digest": "d8ca54f2bd05c086e076f7bfee07d013ba6510ba376b6661025e5978c54557c3",
   "page_digests": {
-    "https://www.cdsdeterminationscommittees.org": "5e9a7f12a0af81b0bd2af7c36a9f79ac8916af2c93997dafa73290329b72fbed",
-    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "62478b0d8b3c3f09021588d17c163fe890f851f35d658072f087a39bfee67ad0",
+    "https://www.cdsdeterminationscommittees.org": "cc3349827536085a048f9f1a428f23d4521355b2e64c200351581b2504396a13",
+    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "150ef7e7b68791516e3e4395fc83e071c82572157742c8224b156aa44a68cf86",
     "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": "bbd18974aaac8b7805f6e25d68e291aecabf8f180a06f6b416b5efca3c1a5caa",
     "https://www.cdsdeterminationscommittees.org/dc-rules": "28b33ff89c491cdfb88dccf953b27ab11144c297020a6358ca3b14d2b692531b",
-    "https://www.cdsdeterminationscommittees.org/governance-committee": "8990ff35badb7d41676ea3a668640d739f00b588e2bcbc1be377913c40b70fdc"
+    "https://www.cdsdeterminationscommittees.org/governance-committee": "25fd47d8fee8fbbd66270a49a032e9b12d86684f5c21a801b4c27d35dfe16aae"
   },
   "page_links": {
     "https://www.cdsdeterminationscommittees.org": {
@@ -24,9 +24,7 @@
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/current-dc-members-effective-as-of-april-29-2026/": "DC Members from April 2026 to April 2027",
       "https://www.cdsdeterminationscommittees.org/dc-rules/": "DC Rules",
-      "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://www.cdsdeterminationscommittees.org/cds/picard-bondco-s-a/": "Picard Bondco S.A.",
-      "https://www.cdsdeterminationscommittees.org/cds/discovery-global-holdings-inc/": "Discovery Global Holdings, Inc."
+      "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management"
     },
     "https://www.cdsdeterminationscommittees.org/about-dc-committees": {
       "https://www.cdsdeterminationscommittees.org/contact/": "Contact",
@@ -73,9 +71,7 @@
       "http://www.creditfixings.com/CreditEventAuctions/fixings.jsp": "Auction Results",
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/dc-rules/": "DC Rules",
-      "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://www.cdsdeterminationscommittees.org/cds/picard-bondco-s-a/": "Picard Bondco S.A.",
-      "https://www.cdsdeterminationscommittees.org/cds/discovery-global-holdings-inc/": "Discovery Global Holdings, Inc."
+      "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management"
     },
     "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": {
       "https://www.cdsdeterminationscommittees.org/contact/": "Contact",
@@ -213,9 +209,7 @@
       "http://www.creditfixings.com/CreditEventAuctions/fixings.jsp": "Auction Results",
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/current-dc-members-effective-as-of-april-29-2026/": "DC Members from April 2026 to April 2027",
-      "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://www.cdsdeterminationscommittees.org/cds/picard-bondco-s-a/": "Picard Bondco S.A.",
-      "https://www.cdsdeterminationscommittees.org/cds/discovery-global-holdings-inc/": "Discovery Global Holdings, Inc."
+      "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management"
     }
   },
   "canonical_urls": [
@@ -227,5 +221,5 @@
   ],
   "pending_added": {},
   "pending_removed": {},
-  "updated_at": "2026-10-19T12:08:00.300919+00:00"
+  "updated_at": "2026-10-20T00:11:42.164450+00:00"
 }
