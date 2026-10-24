@@ -935,5 +935,16 @@
     "diagnostics": [
       "Monitoring configured pages only (5 URLs)."
     ]
+  },
+  {
+    "checked_at": "2026-10-24T12:05:46.160803+00:00",
+    "changed": false,
+    "current_digest": "5b857328b993f9804072abe11661fcf65d9263006a34b95a1023f8c5bb8d1e32",
+    "previous_digest": "5b857328b993f9804072abe11661fcf65d9263006a34b95a1023f8c5bb8d1e32",
+    "page_count": 5,
+    "page_changes": [],
+    "diagnostics": [
+      "Monitoring configured pages only (5 URLs)."
+    ]
   }
 ]
