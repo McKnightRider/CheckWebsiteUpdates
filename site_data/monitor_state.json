@@ -1,11 +1,11 @@
 {
-  "digest": "5b857328b993f9804072abe11661fcf65d9263006a34b95a1023f8c5bb8d1e32",
+  "digest": "87d887a67a704d416b08d60820e936920cae7272155b4f8ef661bfbc8381d71c",
   "page_digests": {
     "https://www.cdsdeterminationscommittees.org": "0f356773536ed4060f10e2d47686a5aea31eff756bf321c087cf1705e66b4607",
     "https://www.cdsdeterminationscommittees.org/about-dc-committees": "bd1d24fd905a616b688f867e67c1e9e7fd63a443b7866c1a18919931c73f0ca6",
     "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": "bbd18974aaac8b7805f6e25d68e291aecabf8f180a06f6b416b5efca3c1a5caa",
     "https://www.cdsdeterminationscommittees.org/dc-rules": "28b33ff89c491cdfb88dccf953b27ab11144c297020a6358ca3b14d2b692531b",
-    "https://www.cdsdeterminationscommittees.org/governance-committee": "594be10b0143744f3304f78b9518b0ca79051fbf8c0dd177788582d856b84740"
+    "https://www.cdsdeterminationscommittees.org/governance-committee": "da5fd3e740b182080adb085e73da3ee9c7f55f11338966f0fd9d4c370ac36059"
   },
   "page_links": {
     "https://www.cdsdeterminationscommittees.org": {
@@ -201,6 +201,7 @@
       "https://www.cdsdeterminationscommittees.org/documents/2026/02/agenda-for-february-2026-meeting-12-february-2026.pdf/": "Agenda for February 2026 meeting - 12 February 2026",
       "https://www.cdsdeterminationscommittees.org/documents/2026/04/governance-committee-agenda-april-2026-meeting.pdf/": "Agenda for April 2026 meeting - 27 April 2026",
       "https://www.cdsdeterminationscommittees.org/documents/2026/09/gc-september-2026-agenda.pdf/": "Agenda for September 2026 meeting - 17 September 2026",
+      "https://www.cdsdeterminationscommittees.org/documents/2026/10/gc-october-2026-agenda.pdf/": "Agenda for October 2026 meeting - 27 October 2026",
       "https://www.cdsdeterminationscommittees.org/documents/2025/09/cds-gc-meeting-minutes-11-september-2025.pdf/": "GC Meeting - 11 September 2025 Minutes",
       "https://www.cdsdeterminationscommittees.org/documents/2025/10/cds-gc-meeting-minutes-15-october-2025.pdf/": "GC Meeting - 15 October 2025 Minutes",
       "https://www.cdsdeterminationscommittees.org/documents/2025/12/cds-gc-meeting-minutes-1-december-2025.pdf/": "GC Meeting - 1 December 2025 Minutes",
@@ -224,5 +225,5 @@
   ],
   "pending_added": {},
   "pending_removed": {},
-  "updated_at": "2026-10-25T12:05:48.881395+00:00"
+  "updated_at": "2026-10-26T00:12:04.300810+00:00"
 }
