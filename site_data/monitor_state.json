@@ -1,11 +1,11 @@
 {
-  "digest": "87d887a67a704d416b08d60820e936920cae7272155b4f8ef661bfbc8381d71c",
+  "digest": "4f1cfa0416b0deed3a1ef0155ec6f58e7cc7258fda01b2a2d10e54d2c0238086",
   "page_digests": {
-    "https://www.cdsdeterminationscommittees.org": "0f356773536ed4060f10e2d47686a5aea31eff756bf321c087cf1705e66b4607",
-    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "bd1d24fd905a616b688f867e67c1e9e7fd63a443b7866c1a18919931c73f0ca6",
+    "https://www.cdsdeterminationscommittees.org": "cc3349827536085a048f9f1a428f23d4521355b2e64c200351581b2504396a13",
+    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "150ef7e7b68791516e3e4395fc83e071c82572157742c8224b156aa44a68cf86",
     "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": "bbd18974aaac8b7805f6e25d68e291aecabf8f180a06f6b416b5efca3c1a5caa",
     "https://www.cdsdeterminationscommittees.org/dc-rules": "28b33ff89c491cdfb88dccf953b27ab11144c297020a6358ca3b14d2b692531b",
-    "https://www.cdsdeterminationscommittees.org/governance-committee": "da5fd3e740b182080adb085e73da3ee9c7f55f11338966f0fd9d4c370ac36059"
+    "https://www.cdsdeterminationscommittees.org/governance-committee": "3f77fda1c1ce8a4459584743b48c95b0783e698810d2ede59b9ee8c93e7f3cc1"
   },
   "page_links": {
     "https://www.cdsdeterminationscommittees.org": {
@@ -24,8 +24,7 @@
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/current-dc-members-effective-as-of-april-29-2026/": "DC Members from April 2026 to April 2027",
       "https://www.cdsdeterminationscommittees.org/dc-rules/": "DC Rules",
-      "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://www.cdsdeterminationscommittees.org/cds/picard-bondco-s-a/": "Picard Bondco S.A."
+      "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management"
     },
     "https://www.cdsdeterminationscommittees.org/about-dc-committees": {
       "https://www.cdsdeterminationscommittees.org/contact/": "Contact",
@@ -72,8 +71,7 @@
       "http://www.creditfixings.com/CreditEventAuctions/fixings.jsp": "Auction Results",
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/dc-rules/": "DC Rules",
-      "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://www.cdsdeterminationscommittees.org/cds/picard-bondco-s-a/": "Picard Bondco S.A."
+      "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management"
     },
     "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": {
       "https://www.cdsdeterminationscommittees.org/contact/": "Contact",
@@ -212,8 +210,7 @@
       "http://www.creditfixings.com/CreditEventAuctions/fixings.jsp": "Auction Results",
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/current-dc-members-effective-as-of-april-29-2026/": "DC Members from April 2026 to April 2027",
-      "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://www.cdsdeterminationscommittees.org/cds/picard-bondco-s-a/": "Picard Bondco S.A."
+      "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management"
     }
   },
   "canonical_urls": [
@@ -225,5 +222,5 @@
   ],
   "pending_added": {},
   "pending_removed": {},
-  "updated_at": "2026-10-26T13:27:34.534522+00:00"
+  "updated_at": "2026-10-27T00:11:03.746109+00:00"
 }
