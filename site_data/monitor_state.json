@@ -1,11 +1,11 @@
 {
-  "digest": "905268d718c703b8f5b9c5d95a0ad3f8d5944044e3ecbbf71dcfc02ac12403ab",
+  "digest": "319fc580a8da7a055894d0c8bde9b9a55a10389203d5ef2a533fc164f9681f3e",
   "page_digests": {
     "https://www.cdsdeterminationscommittees.org": "4ce3e0579a054d686c466461ec425b711aeb5dd7ca11217034ac55190c34062c",
     "https://www.cdsdeterminationscommittees.org/about-dc-committees": "8a23697c61e2ba6b854b353309ecf2cb1b448f9d1567a3c5df1cb7500afddf91",
     "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": "00eecd770c409fa68bea7f7ed5dc358b7bb00ca564acae2449e61013ce3d031b",
     "https://www.cdsdeterminationscommittees.org/dc-rules": "527bc7a50f39f3e611bc1c6a47eeac4d1b84e9c38efddd29448736db0f28452c",
-    "https://www.cdsdeterminationscommittees.org/governance-committee": "8fce24aaac5ec600d10791bd9b316382c7b1e40f9151e11353feba8b6eddb76e"
+    "https://www.cdsdeterminationscommittees.org/governance-committee": "53bdee0b708c3d76dce7f4de7b713f2b9c1f7698af9aba8244b83b82bef97e6a"
   },
   "page_links": {
     "https://www.cdsdeterminationscommittees.org": {
@@ -211,6 +211,7 @@
       "https://www.cdsdeterminationscommittees.org/documents/2026/05/gc-meeting-april-2026-minutes.pdf/": "GC Meeting - 27 April 2026 Minutes",
       "https://www.cdsdeterminationscommittees.org/documents/2026/07/97596.pdf/": "GC Meeting - 7 July 2026 Resolutions in Lieu of Meeting",
       "https://www.cdsdeterminationscommittees.org/documents/2026/09/gc-meeting-17-september-2026-minutes.pdf/": "GC Meeting - 17 September 2026 Minutes",
+      "https://www.cdsdeterminationscommittees.org/documents/2026/11/gc-meeting-27-october-2026-minutes.pdf/": "GC Meeting - 27 October 2026 Minutes",
       "http://www.creditfixings.com/CreditEventAuctions/fixings.jsp": "Auction Results",
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/current-dc-members-effective-as-of-april-29-2026/": "DC Members from April 2026 to April 2027",
@@ -227,5 +228,5 @@
   ],
   "pending_added": {},
   "pending_removed": {},
-  "updated_at": "2026-11-03T00:07:45.283875+00:00"
+  "updated_at": "2026-11-03T12:04:22.078136+00:00"
 }
