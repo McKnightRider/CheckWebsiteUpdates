@@ -1289,5 +1289,27 @@
     "diagnostics": [
       "Monitoring configured pages only (5 URLs)."
     ]
+  },
+  {
+    "checked_at": "2026-11-06T12:04:23.767918+00:00",
+    "changed": true,
+    "current_digest": "732769b7e7e3dca3b28991b0e0b459a94351d8d1964e020563b516406cc56df9",
+    "previous_digest": "319fc580a8da7a055894d0c8bde9b9a55a10389203d5ef2a533fc164f9681f3e",
+    "page_count": 5,
+    "page_changes": [
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/dc-rules",
+        "change_type": "updated",
+        "added_links": [
+          "Addition of hyperlink \"available here\".",
+          "Addition of hyperlink \"available here\".",
+          "Addition of hyperlink \"Redline - Consolidated DC Rules (December 2023 Version) v (November 2026 Version)\".",
+          "Addition of hyperlink \"Consolidated version of the DC Rules as at November 2026\"."
+        ]
+      }
+    ],
+    "diagnostics": [
+      "Monitoring configured pages only (5 URLs)."
+    ]
   }
 ]
