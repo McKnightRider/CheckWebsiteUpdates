@@ -1,11 +1,11 @@
 {
-  "digest": "732769b7e7e3dca3b28991b0e0b459a94351d8d1964e020563b516406cc56df9",
+  "digest": "36b8bc317f0964d065ac8becb1c8af6829e09052130e79b0ea2d3294d8dc8348",
   "page_digests": {
-    "https://www.cdsdeterminationscommittees.org": "4ce3e0579a054d686c466461ec425b711aeb5dd7ca11217034ac55190c34062c",
-    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "8a23697c61e2ba6b854b353309ecf2cb1b448f9d1567a3c5df1cb7500afddf91",
-    "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": "00eecd770c409fa68bea7f7ed5dc358b7bb00ca564acae2449e61013ce3d031b",
-    "https://www.cdsdeterminationscommittees.org/dc-rules": "0b3fdf8a1411b20910825f91606dfc84f2ca55836eed0be42c7d1f3ee0dced10",
-    "https://www.cdsdeterminationscommittees.org/governance-committee": "53bdee0b708c3d76dce7f4de7b713f2b9c1f7698af9aba8244b83b82bef97e6a"
+    "https://www.cdsdeterminationscommittees.org": "503bde66eb9abc9bec8d87a62289f08dc8a3f544702f12d896bf7c4a41e42e06",
+    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "8d8aa5b0c697e14bf28aa7ed02b38f0bc6683b6eca0f7ba7a5d735331c818aa0",
+    "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": "97074a0c840d5e6badf2a8bd057acde6e77bf4921550f913c30502cabe12274c",
+    "https://www.cdsdeterminationscommittees.org/dc-rules": "efec02804cc6318cf70c2f5b2c776e97586ce9c6580c6dffb2ad8c4800ca8489",
+    "https://www.cdsdeterminationscommittees.org/governance-committee": "670cb7e41d12b8be5b126330b17ef77ead21d40e947b06444dc122c664d9f551"
   },
   "page_links": {
     "https://www.cdsdeterminationscommittees.org": {
@@ -25,7 +25,7 @@
       "https://www.cdsdeterminationscommittees.org/current-dc-members-effective-as-of-april-29-2026/": "DC Members from April 2026 to April 2027",
       "https://www.cdsdeterminationscommittees.org/dc-rules/": "DC Rules",
       "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance"
+      "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance (opens in a new tab)"
     },
     "https://www.cdsdeterminationscommittees.org/about-dc-committees": {
       "https://www.cdsdeterminationscommittees.org/contact/": "Contact",
@@ -73,7 +73,7 @@
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/dc-rules/": "DC Rules",
       "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance"
+      "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance (opens in a new tab)"
     },
     "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": {
       "https://www.cdsdeterminationscommittees.org/contact/": "Contact",
@@ -92,7 +92,7 @@
       "https://www.cdsdeterminationscommittees.org/committee/australia-new-zealand/": "Australia-New Zealand",
       "https://www.cdsdeterminationscommittees.org/committee/emea-europe/": "EMEA (Europe)",
       "https://www.cdsdeterminationscommittees.org/committee/japan/": "Japan",
-      "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance"
+      "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance (opens in a new tab)"
     },
     "https://www.cdsdeterminationscommittees.org/dc-rules": {
       "https://www.cdsdeterminationscommittees.org/contact/": "Contact",
@@ -184,7 +184,7 @@
       "https://www.cdsdeterminationscommittees.org/wp-content/files_mf/1414435393Blackline_July_09_vs_March_09.pdf": "Blackline against previous version of DC Rules (March 2009 Version)",
       "https://www.cdsdeterminationscommittees.org/wp-content/files_mf/1414435449All_Determinations_Committee_Resolution_23072009.pdf": "DC Decision Americas/EMEA/Asia Ex-Japan/Japan/ANZ Regions \u2013 July 23, 2009",
       "https://www.cdsdeterminationscommittees.org/wp-content/files_mf/14146070611414435213DC_Rules_Original_March_2009.pdf": "DC Rules (March 2009 Version)",
-      "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance"
+      "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance (opens in a new tab)"
     },
     "https://www.cdsdeterminationscommittees.org/governance-committee": {
       "https://www.cdsdeterminationscommittees.org/contact/": "Contact",
@@ -220,7 +220,7 @@
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/current-dc-members-effective-as-of-april-29-2026/": "DC Members from April 2026 to April 2027",
       "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance"
+      "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance (opens in a new tab)"
     }
   },
   "canonical_urls": [
@@ -232,5 +232,5 @@
   ],
   "pending_added": {},
   "pending_removed": {},
-  "updated_at": "2026-11-12T00:08:26.411885+00:00"
+  "updated_at": "2026-11-12T12:04:40.955226+00:00"
 }
