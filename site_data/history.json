@@ -1,16 +1,5 @@
 [
   {
-    "checked_at": "2026-09-25T17:58:23.382328+00:00",
-    "changed": false,
-    "current_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "previous_digest": null,
-    "page_count": 5,
-    "page_changes": [],
-    "diagnostics": [
-      "Monitoring configured pages only (5 URLs)."
-    ]
-  },
-  {
     "checked_at": "2026-09-25T18:20:55.707017+00:00",
     "changed": false,
     "current_digest": "c9752f9e78ab0e338719d04952b0c482c4c5ebfc8195de4436fe3619df2e9211",
@@ -1451,6 +1440,17 @@
   },
   {
     "checked_at": "2026-11-11T12:04:54.967740+00:00",
+    "changed": false,
+    "current_digest": "732769b7e7e3dca3b28991b0e0b459a94351d8d1964e020563b516406cc56df9",
+    "previous_digest": "732769b7e7e3dca3b28991b0e0b459a94351d8d1964e020563b516406cc56df9",
+    "page_count": 5,
+    "page_changes": [],
+    "diagnostics": [
+      "Monitoring configured pages only (5 URLs)."
+    ]
+  },
+  {
+    "checked_at": "2026-11-12T00:08:26.415068+00:00",
     "changed": false,
     "current_digest": "732769b7e7e3dca3b28991b0e0b459a94351d8d1964e020563b516406cc56df9",
     "previous_digest": "732769b7e7e3dca3b28991b0e0b459a94351d8d1964e020563b516406cc56df9",
