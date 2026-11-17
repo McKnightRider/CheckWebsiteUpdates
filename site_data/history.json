@@ -1,30 +1,5 @@
 [
   {
-    "checked_at": "2026-09-30T00:13:09.588758+00:00",
-    "changed": true,
-    "current_digest": "868a65a91fd28dd8c341628d9cc7bf1d1daa6131efa5c168861de562c02d44bb",
-    "previous_digest": "c9752f9e78ab0e338719d04952b0c482c4c5ebfc8195de4436fe3619df2e9211",
-    "page_count": 5,
-    "page_changes": [
-      {
-        "url": "https://www.cdsdeterminationscommittees.org/governance-committee",
-        "change_type": "updated",
-        "added_links": [
-          "Addition of hyperlink \"GC Meeting - 17 September 2026 Minutes\"."
-        ],
-        "added_link_targets": [
-          {
-            "label": "GC Meeting - 17 September 2026 Minutes",
-            "url": "https://www.cdsdeterminationscommittees.org/documents/2026/09/gc-meeting-17-september-2026-minutes.pdf/"
-          }
-        ]
-      }
-    ],
-    "diagnostics": [
-      "Monitoring configured pages only (5 URLs)."
-    ]
-  },
-  {
     "checked_at": "2026-09-30T12:07:47.205155+00:00",
     "changed": false,
     "current_digest": "868a65a91fd28dd8c341628d9cc7bf1d1daa6131efa5c168861de562c02d44bb",
@@ -1536,6 +1511,17 @@
         "added_links": []
       }
     ],
+    "diagnostics": [
+      "Monitoring configured pages only (5 URLs)."
+    ]
+  },
+  {
+    "checked_at": "2026-11-17T12:04:21.244951+00:00",
+    "changed": false,
+    "current_digest": "36b8bc317f0964d065ac8becb1c8af6829e09052130e79b0ea2d3294d8dc8348",
+    "previous_digest": "36b8bc317f0964d065ac8becb1c8af6829e09052130e79b0ea2d3294d8dc8348",
+    "page_count": 5,
+    "page_changes": [],
     "diagnostics": [
       "Monitoring configured pages only (5 URLs)."
     ]
