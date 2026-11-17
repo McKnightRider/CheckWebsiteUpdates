@@ -1,11 +1,11 @@
 {
-  "digest": "18846d92fc7717c4ed72969ac13a91b57b110be30c88116a320f5c2077677d8d",
+  "digest": "36b8bc317f0964d065ac8becb1c8af6829e09052130e79b0ea2d3294d8dc8348",
   "page_digests": {
-    "https://www.cdsdeterminationscommittees.org": "38740a21d23b06416b4b39e8ea24c1cad11487e0bbe67d9af4ffd88df684e0a8",
-    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "ceb39c79495da8f723048d4fe68b1dbd7cb8e6e5aad670e826e253b65d710065",
+    "https://www.cdsdeterminationscommittees.org": "503bde66eb9abc9bec8d87a62289f08dc8a3f544702f12d896bf7c4a41e42e06",
+    "https://www.cdsdeterminationscommittees.org/about-dc-committees": "8d8aa5b0c697e14bf28aa7ed02b38f0bc6683b6eca0f7ba7a5d735331c818aa0",
     "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": "97074a0c840d5e6badf2a8bd057acde6e77bf4921550f913c30502cabe12274c",
     "https://www.cdsdeterminationscommittees.org/dc-rules": "efec02804cc6318cf70c2f5b2c776e97586ce9c6580c6dffb2ad8c4800ca8489",
-    "https://www.cdsdeterminationscommittees.org/governance-committee": "05ea8909880be79356e981019a6c1c17dcd1bd9539c717fee348ffeae4e986dd"
+    "https://www.cdsdeterminationscommittees.org/governance-committee": "670cb7e41d12b8be5b126330b17ef77ead21d40e947b06444dc122c664d9f551"
   },
   "page_links": {
     "https://www.cdsdeterminationscommittees.org": {
@@ -25,7 +25,6 @@
       "https://www.cdsdeterminationscommittees.org/current-dc-members-effective-as-of-april-29-2026/": "DC Members from April 2026 to April 2027",
       "https://www.cdsdeterminationscommittees.org/dc-rules/": "DC Rules",
       "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://www.cdsdeterminationscommittees.org/cds/navient-corporation/": "Navient Corporation",
       "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance (opens in a new tab)"
     },
     "https://www.cdsdeterminationscommittees.org/about-dc-committees": {
@@ -74,7 +73,6 @@
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/dc-rules/": "DC Rules",
       "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://www.cdsdeterminationscommittees.org/cds/navient-corporation/": "Navient Corporation",
       "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance (opens in a new tab)"
     },
     "https://www.cdsdeterminationscommittees.org/credit-default-swaps-management": {
@@ -222,7 +220,6 @@
       "https://www.cdsdeterminationscommittees.org/about-dc-committees/cd-physical-settlement-matrix/": "CD Physical Settlement Matrix",
       "https://www.cdsdeterminationscommittees.org/current-dc-members-effective-as-of-april-29-2026/": "DC Members from April 2026 to April 2027",
       "https://www.cdsdeterminationscommittees.org/lcds-management/": "LCDS Management",
-      "https://www.cdsdeterminationscommittees.org/cds/navient-corporation/": "Navient Corporation",
       "https://wordpress.org/plugins/gdpr-cookie-compliance/": "Powered by GDPR Cookie Compliance (opens in a new tab)"
     }
   },
@@ -235,5 +232,5 @@
   ],
   "pending_added": {},
   "pending_removed": {},
-  "updated_at": "2026-11-16T12:07:48.510007+00:00"
+  "updated_at": "2026-11-17T00:08:15.915966+00:00"
 }

@@ -1,16 +1,5 @@
 [
   {
-    "checked_at": "2026-09-29T12:07:38.668735+00:00",
-    "changed": false,
-    "current_digest": "c9752f9e78ab0e338719d04952b0c482c4c5ebfc8195de4436fe3619df2e9211",
-    "previous_digest": "c9752f9e78ab0e338719d04952b0c482c4c5ebfc8195de4436fe3619df2e9211",
-    "page_count": 5,
-    "page_changes": [],
-    "diagnostics": [
-      "Monitoring configured pages only (5 URLs)."
-    ]
-  },
-  {
     "checked_at": "2026-09-30T00:13:09.588758+00:00",
     "changed": true,
     "current_digest": "868a65a91fd28dd8c341628d9cc7bf1d1daa6131efa5c168861de562c02d44bb",
@@ -1520,6 +1509,33 @@
     "previous_digest": "18846d92fc7717c4ed72969ac13a91b57b110be30c88116a320f5c2077677d8d",
     "page_count": 5,
     "page_changes": [],
+    "diagnostics": [
+      "Monitoring configured pages only (5 URLs)."
+    ]
+  },
+  {
+    "checked_at": "2026-11-17T00:08:15.917531+00:00",
+    "changed": true,
+    "current_digest": "36b8bc317f0964d065ac8becb1c8af6829e09052130e79b0ea2d3294d8dc8348",
+    "previous_digest": "18846d92fc7717c4ed72969ac13a91b57b110be30c88116a320f5c2077677d8d",
+    "page_count": 5,
+    "page_changes": [
+      {
+        "url": "https://www.cdsdeterminationscommittees.org",
+        "change_type": "updated",
+        "added_links": []
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/about-dc-committees",
+        "change_type": "updated",
+        "added_links": []
+      },
+      {
+        "url": "https://www.cdsdeterminationscommittees.org/governance-committee",
+        "change_type": "updated",
+        "added_links": []
+      }
+    ],
     "diagnostics": [
       "Monitoring configured pages only (5 URLs)."
     ]
